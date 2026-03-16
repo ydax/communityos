@@ -13,7 +13,11 @@ vi.mock('firebase-admin/app', () => ({
 }));
 
 vi.mock('firebase-admin/firestore', () => ({
-  getFirestore: vi.fn(() => createMockFirestore())
+  getFirestore: vi.fn(() => createMockFirestore()),
+  FieldValue: {
+    serverTimestamp: vi.fn(() => '2026-01-01T00:00:00.000Z'),
+    increment: vi.fn((n) => n)
+  }
 }));
 
 vi.mock('firebase-admin/auth', () => ({
@@ -26,7 +30,8 @@ function createMockFirestore() {
     collection: vi.fn((collectionName) => createMockCollectionReference(collectionName)),
     doc: vi.fn((docPath) => createMockDocumentReference(docPath)),
     batch: vi.fn(() => createMockBatch()),
-    runTransaction: vi.fn()
+    runTransaction: vi.fn(),
+    settings: vi.fn()
   };
 }
 
