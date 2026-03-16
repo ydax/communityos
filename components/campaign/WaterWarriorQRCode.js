@@ -1,57 +1,11 @@
 import React from 'react';
-import { Box, Typography, Paper } from '@material-ui/core';
-import { makeStyles } from '@material-ui/core/styles';
-
-const useStyles = makeStyles((theme) => ({
-  qrContainer: {
-    padding: theme.spacing(3),
-    textAlign: 'center',
-    backgroundColor: '#FFFFFF',
-    border: '3px solid #0077be',
-    borderRadius: theme.spacing(1),
-    maxWidth: '400px',
-    margin: '0 auto',
-  },
-  qrPlaceholder: {
-    width: '250px',
-    height: '250px',
-    margin: '0 auto',
-    backgroundColor: '#f0f0f0',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    border: '2px dashed #0077be',
-    borderRadius: theme.spacing(0.5),
-  },
-  title: {
-    fontWeight: 'bold',
-    color: '#0077be',
-    marginBottom: theme.spacing(2),
-  },
-  mascot: {
-    fontSize: '4rem',
-    marginBottom: theme.spacing(2),
-  },
-  instructions: {
-    marginTop: theme.spacing(2),
-    color: '#333',
-    fontSize: '0.9rem',
-    lineHeight: 1.6,
-  },
-  disclosure: {
-    marginTop: theme.spacing(2),
-    fontSize: '0.75rem',
-    color: '#666',
-    fontStyle: 'italic',
-  },
-}));
 
 /**
  * Water Warrior QR Code Component
- * 
+ *
  * For use in "Coffee Coalition" meetings and printed materials.
  * Displays QR code linking to Anedot donation page.
- * 
+ *
  * @param {Object} props - Component props
  * @param {string} props.donateUrl - Anedot URL to encode in QR (defaults to campaign URL)
  * @param {string} props.qrCodeImageUrl - URL to pre-generated QR code image (optional)
@@ -63,48 +17,46 @@ const WaterWarriorQRCode = ({
   qrCodeImageUrl,
   showInstructions = true,
 }) => {
-  const classes = useStyles();
-
   return (
-    <Paper elevation={3} className={classes.qrContainer}>
-      <div className={classes.mascot}>💧🛡️</div>
-      
-      <Typography variant="h5" className={classes.title}>
-        JOIN THE WATER WARRIORS
-      </Typography>
+    <div className="bg-white border-[3px] border-[#0077be] rounded-lg p-6 max-w-[400px] mx-auto text-center shadow-medium">
+      <div className="text-6xl mb-4">💧🛡️</div>
 
-      <Box className={classes.qrPlaceholder}>
+      <h2 className="text-xl font-bold text-[#0077be] mb-4">
+        JOIN THE WATER WARRIORS
+      </h2>
+
+      <div className="w-[250px] h-[250px] mx-auto bg-[#f0f0f0] flex items-center justify-center border-2 border-dashed border-[#0077be] rounded">
         {qrCodeImageUrl ? (
-          <img 
-            src={qrCodeImageUrl} 
-            alt="Water Warrior QR Code" 
-            style={{ width: '100%', height: '100%' }}
+          <img
+            src={qrCodeImageUrl}
+            alt="Water Warrior QR Code"
+            className="w-full h-full"
           />
         ) : (
-          <Typography variant="body2" color="textSecondary">
+          <p className="text-sm text-gray-500 leading-relaxed px-4">
             QR Code Here
             <br />
             Generate at: qr-code-generator.com
             <br />
             Link: {donateUrl}
-          </Typography>
+          </p>
         )}
-      </Box>
+      </div>
 
       {showInstructions && (
-        <Typography variant="body2" className={classes.instructions}>
+        <p className="mt-4 text-[#333] text-sm leading-relaxed">
           <strong>Scan to Donate</strong>
           <br />
-          "I don't take PAC money. I have a $500 limit because I work for the River, 
-          not the developers. If you want to help us keep the magic flowing, 
-          scan this code. It takes 30 seconds to join the tribe."
-        </Typography>
+          &ldquo;I don&apos;t take PAC money. I have a $500 limit because I work for the River,
+          not the developers. If you want to help us keep the magic flowing,
+          scan this code. It takes 30 seconds to join the tribe.&rdquo;
+        </p>
       )}
 
-      <Typography variant="caption" className={classes.disclosure}>
+      <p className="mt-4 text-xs text-[#666] italic">
         Pol. Adv. Pd. for by Davis Jones Campaign
-      </Typography>
-    </Paper>
+      </p>
+    </div>
   );
 };
 
