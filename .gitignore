@@ -1,0 +1,47 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Testing
+coverage/
+.nyc_output/
+cypress/videos/
+cypress/screenshots/
+
+# Next.js
+.next/
+out/
+build/
+dist/
+
+# Production
+.vercel
+
+# Environment variables
+.env
+.env*.local
+.env.production
+
+# Debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Local development
+.DS_Store
+*.pem
+.vscode/
+.idea/
+
+# Firebase service account keys (NEVER commit these!)
+*firebase*.json
+service-account*.json
+
+# Vercel
+.vercel
+
+# TypeScript (if accidentally added)
+*.tsbuildinfo
+next-env.d.ts

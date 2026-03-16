@@ -1,0 +1,105 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Root variables */
+:root {
+  --max-width-content: 1200px;
+  --border-radius: 8px;
+  --font-mono: "Menlo", "Monaco", "Courier New", monospace;
+}
+
+/* Base styles */
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+html,
+body {
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+body {
+  color: rgb(var(--foreground-rgb));
+  background: rgb(var(--background-rgb));
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Utility classes */
+.container {
+  width: 100%;
+  max-width: var(--max-width-content);
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+/* Loading states */
+.loading-spinner {
+  border: 3px solid rgba(0, 0, 0, 0.1);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes ping {
+  75%,
+  100% {
+    transform: scale(1.4);
+    opacity: 0;
+  }
+}
+
+/* Responsive typography */
+@media (max-width: 768px) {
+  html {
+    font-size: 14px;
+  }
+}
+
+/* Bottom sheet slide-up animation (TapToEdit) */
+@keyframes slide-up {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.3s ease-out;
+}
+
+/* Hide scrollbar for carousel */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Print styles */
+@media print {
+  body {
+    background: white;
+  }
+}

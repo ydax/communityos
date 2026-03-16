@@ -1,0 +1,62 @@
+{
+  "basicSite": {
+    "domain": "joesfencing.com",
+    "ownerId": "user_123",
+    "businessName": "Joe's Fencing & Repair",
+    "description": "Professional fence installation and repair serving Kyle, TX",
+    "category": "fencing",
+    "location": {
+      "city": "Kyle",
+      "state": "TX",
+      "zip": "78640",
+      "serviceRadius": 25
+    },
+    "theme": "the-trade",
+    "sections": [
+      {
+        "type": "hero",
+        "visible": true,
+        "data": {
+          "headline": "Expert Fence Solutions",
+          "subheadline": "Quality fencing for Central Texas homes",
+          "ctaText": "Get a Quote"
+        }
+      },
+      {
+        "type": "services",
+        "visible": true,
+        "data": {}
+      },
+      {
+        "type": "contact",
+        "visible": true,
+        "data": {
+          "phone": "(512) 555-1234",
+          "email": "joe@joesfencing.com"
+        }
+      }
+    ],
+    "contact": {
+      "phone": "(512) 555-1234",
+      "email": "joe@joesfencing.com",
+      "website": null
+    },
+    "status": "active"
+  },
+  "minimalSite": {
+    "domain": "minimal-test.com",
+    "ownerId": "user_456",
+    "businessName": "Minimal Test Site",
+    "theme": "the-trade",
+    "sections": [],
+    "status": "active"
+  },
+  "draftSite": {
+    "domain": "draft-site.com",
+    "ownerId": "user_789",
+    "businessName": "Draft Site",
+    "theme": "the-maker",
+    "sections": [],
+    "status": "draft"
+  }
+}

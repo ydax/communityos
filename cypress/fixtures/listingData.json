@@ -1,0 +1,84 @@
+{
+  "serviceListing": {
+    "siteId": "site_123",
+    "title": "Fence Repair & Maintenance",
+    "description": "Professional fence repair service including post replacement, panel repair, staining, and general maintenance.",
+    "type": "service",
+    "category": "fence_repair",
+    "pricing": {
+      "model": "hourly",
+      "basePrice": 75.00,
+      "unit": "hour",
+      "minCharge": 2
+    },
+    "images": [],
+    "availability": {
+      "isAvailable": true,
+      "schedule": {
+        "days": ["monday", "tuesday", "wednesday", "thursday", "friday"],
+        "hours": { "start": "08:00", "end": "17:00" }
+      }
+    },
+    "status": "active"
+  },
+  "goodListing": {
+    "siteId": "site_123",
+    "title": "Premium Work T-Shirt",
+    "description": "Heavy-duty cotton work shirt with reinforced stitching",
+    "type": "good",
+    "category": "apparel",
+    "pricing": {
+      "model": "variant_based",
+      "basePrice": 24.99,
+      "currency": "USD"
+    },
+    "images": [],
+    "variants": {
+      "hasVariants": true,
+      "options": [
+        { "name": "Color", "values": ["Red", "Blue", "Black"] },
+        { "name": "Size", "values": ["S", "M", "L", "XL"] }
+      ]
+    },
+    "inventory": {
+      "trackQuantity": true,
+      "totalAvailable": 48,
+      "lowStockThreshold": 10
+    },
+    "status": "active"
+  },
+  "variants": [
+    {
+      "listingId": "listing_456",
+      "siteId": "site_123",
+      "sku": "TSHIRT_RED_L",
+      "name": "Red / Large",
+      "options": {
+        "Color": "Red",
+        "Size": "Large"
+      },
+      "price": 24.99,
+      "inventory": {
+        "quantity": 15,
+        "reserved": 0
+      },
+      "status": "active"
+    },
+    {
+      "listingId": "listing_456",
+      "siteId": "site_123",
+      "sku": "TSHIRT_BLUE_M",
+      "name": "Blue / Medium",
+      "options": {
+        "Color": "Blue",
+        "Size": "Medium"
+      },
+      "price": 24.99,
+      "inventory": {
+        "quantity": 12,
+        "reserved": 2
+      },
+      "status": "active"
+    }
+  ]
+}
