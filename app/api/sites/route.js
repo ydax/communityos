@@ -6,31 +6,13 @@ import {
   updateSite,
   listSitesByOwner,
 } from "../../../lib/dbServices/sitesService.js";
+import logger from "../../../lib/logger.js";
 
-/**
- * Structured logging helper
- * @param {string} level - Log level: 'info', 'warn', 'error'
- * @param {string} message - Log message
- * @param {Object} metadata - Additional structured data
- */
-function log(level, message, metadata = {}) {
-  const timestamp = new Date().toISOString();
-  const logEntry = {
-    timestamp,
-    level,
-    message,
-    service: "api-sites",
-    ...metadata,
-  };
+export const maxDuration = 60;
 
-  if (level === "error") {
-    console.error(JSON.stringify(logEntry));
-  } else if (level === "warn") {
-    console.warn(JSON.stringify(logEntry));
-  } else {
-    console.log(JSON.stringify(logEntry));
-  }
-}
+const log = logger("api-sites");
+
+
 
 /**
  * GET /api/sites - List sites by owner
@@ -44,16 +26,13 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const ownerId = searchParams.get("ownerId");
 
-    log("info", "GET /api/sites request received", {
+    log.info("GET /api/sites request received", {
       requestId,
       ownerId,
     });
 
     if (!ownerId) {
-      log("warn", "GET /api/sites validation failed", {
-        requestId,
-        error: "ownerId missing",
-      });
+      log.warn("GET /api/sites: missing ownerId", { requestId });
 
       return NextResponse.json(
         { error: "ownerId query parameter is required" },
@@ -67,7 +46,7 @@ export async function GET(request) {
     const sites = await listSitesByOwner(adminDb, ownerId);
 
     const duration = Date.now() - startTime;
-    log("info", "GET /api/sites successful", {
+    log.info("GET /api/sites success", {
       requestId,
       ownerId,
       siteCount: sites.length,
@@ -85,12 +64,7 @@ export async function GET(request) {
     );
   } catch (error) {
     const duration = Date.now() - startTime;
-    log("error", "GET /api/sites error", {
-      requestId,
-      error: error.message,
-      stack: error.stack,
-      duration,
-    });
+    log.error("GET /api/sites failed", error, { requestId, duration });
 
     return NextResponse.json(
       { error: "Failed to fetch sites" },
@@ -122,16 +96,15 @@ export async function POST(request) {
       hasSections: !!body.sections,
     };
 
-    log("info", "POST /api/sites request received", {
+    log.info("POST /api/sites request received", {
       requestId,
       body: sanitizedBody,
     });
 
     // Validate required fields
     if (!body.domain || !body.ownerId) {
-      log("warn", "POST /api/sites validation failed", {
+      log.warn("POST /api/sites: missing required fields", {
         requestId,
-        error: "Missing required fields",
         missingFields: {
           domain: !body.domain,
           ownerId: !body.ownerId,
@@ -157,7 +130,7 @@ export async function POST(request) {
     const siteId = await createSite(adminDb, body);
 
     const duration = Date.now() - startTime;
-    log("info", "POST /api/sites successful", {
+    log.info("POST /api/sites success", {
       requestId,
       siteId,
       domain: body.domain,
@@ -186,7 +159,7 @@ export async function POST(request) {
 
     // Handle domain already in use
     if (error.message.includes("already in use")) {
-      log("warn", "POST /api/sites domain conflict", {
+      log.warn("POST /api/sites: domain conflict", {
         requestId,
         error: error.message,
         duration,
@@ -202,12 +175,7 @@ export async function POST(request) {
     }
 
     // Generic error
-    log("error", "POST /api/sites error", {
-      requestId,
-      error: error.message,
-      stack: error.stack,
-      duration,
-    });
+    log.error("POST /api/sites failed", error, { requestId, duration });
 
     return NextResponse.json(
       { error: "Failed to create site" },

@@ -1,4 +1,10 @@
 import { NextResponse } from "next/server";
+import logger from "../../../../lib/logger.js";
+
+export const maxDuration = 60;
+
+const log = logger("api-generate-site");
+
 
 /**
  * POST /api/ai/generate-site
@@ -36,6 +42,13 @@ async function callGemini(systemPrompt, userPrompt) {
 
   const endpoint = `${getGeminiModelEndpoint(AI_MODELS.siteBuilder)}?key=${apiKey}`;
 
+  log.debug("[callGemini] Sending request", {
+    model: AI_MODELS.siteBuilder,
+    promptLength: userPrompt.length,
+  });
+
+  const timer = log.startTimer("gemini-api-call", { model: AI_MODELS.siteBuilder });
+
   // Use the REST API directly to avoid SDK import issues in edge/serverless
   const response = await fetch(endpoint, {
     method: "POST",
@@ -55,15 +68,18 @@ async function callGemini(systemPrompt, userPrompt) {
 
   if (!response.ok) {
     const errorBody = await response.text();
+    timer.end({ success: false, httpStatus: response.status });
     throw new Error(`Gemini API error (${response.status}): ${errorBody}`);
   }
 
   const data = await response.json();
   const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
   if (!text) {
+    timer.end({ success: false, reason: "empty-response" });
     throw new Error("No content in Gemini response");
   }
 
+  timer.end({ success: true, responseLength: text.length });
   return text;
 }
 
@@ -90,6 +106,9 @@ function checkRateLimit(ip) {
 }
 
 export async function POST(request) {
+  const requestId = request.headers.get("x-request-id") || crypto.randomUUID();
+  const requestTimer = log.startTimer("site-generation-request", { requestId });
+
   try {
     // Rate limiting
     const ip =
@@ -98,6 +117,7 @@ export async function POST(request) {
       "unknown";
 
     if (!checkRateLimit(ip)) {
+      log.warn("Rate limit exceeded", { requestId, ip });
       return NextResponse.json(
         {
           success: false,
@@ -111,6 +131,14 @@ export async function POST(request) {
     // Parse and validate input
     const body = await request.json();
     const { businessName, businessStory, category, vibePreset } = body;
+
+    log.info("Site generation started", {
+      requestId,
+      businessName: businessName?.substring(0, 50),
+      category,
+      vibePreset,
+    });
+
 
     if (!businessName?.trim()) {
       return NextResponse.json(
@@ -149,12 +177,20 @@ export async function POST(request) {
     const result = await generateVariations(sanitizedInput, { callGemini });
 
     if (!result.success) {
-      console.error("[generate-site] Generation failed:", result.error);
+      log.error("Site generation failed", new Error(result.error), { requestId });
+      requestTimer.end({ success: false });
       return NextResponse.json(
         { success: false, error: result.error, variations: [] },
         { status: 500 },
       );
     }
+
+    log.info("Site generation completed", {
+      requestId,
+      variationCount: result.variations.length,
+      themes: result.variations.map((v) => v.theme),
+    });
+    requestTimer.end({ success: true, variationCount: result.variations.length });
 
     return NextResponse.json({
       success: true,
@@ -162,7 +198,8 @@ export async function POST(request) {
       error: null,
     });
   } catch (err) {
-    console.error("[generate-site] Unexpected error:", err);
+    log.error("Site generation unexpected error", err, { requestId });
+    requestTimer.end({ success: false });
     return NextResponse.json(
       { success: false, error: "Internal server error", variations: [] },
       { status: 500 },
