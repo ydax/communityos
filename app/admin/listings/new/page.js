@@ -1,26 +1,32 @@
 /**
- * Add Listing Page — The "Giant Fork"
+ * Add Listing Page — The "Giant Fork" + Magic Fill
  *
- * The Anti-Design UX in action:
- *   1. User sees two prominent cards: "Offer a Service" vs "Sell a Physical Item"
- *   2. Clicking one reveals the appropriate form (ServiceForm or GoodForm)
- *   3. Photos upload directly to Firebase Storage (no Blob in Server Actions)
- *   4. Form data is validated with Zod and written via Server Action (batched)
+ * Phase 3 evolution: Now features the MagicBox AI dropzone at the top.
+ * Users can either:
+ *   A) Drop a photo → AI auto-fills → review + publish (Magic Fill)
+ *   B) Choose type manually → fill form → publish (Manual Flow)
  *
- * This page is the nucleus of Milestone 1.2 and routes through to the
- * createListing Server Action (Milestone 1.3).
+ * When AI returns data, it:
+ *   1. Auto-selects the listing type (service/good)
+ *   2. Pre-fills all form fields via controlled state
+ *   3. Adds the uploaded image to the media URLs
+ *   4. If goods, suggests variant axes for the user to confirm
+ *
+ * The user always reviews and edits before publishing — AI fills,
+ * human approves.
  *
  * @module app/admin/listings/new/page
  */
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import ServiceForm from '@/components/listings/ServiceForm';
 import GoodForm from '@/components/listings/GoodForm';
 import MediaDropzone from '@/components/listings/MediaDropzone';
+import MagicBox from '@/components/listings/MagicBox';
 import { createListing } from '@/app/actions/listings';
 
 export default function NewListingPage() {
@@ -31,9 +37,41 @@ export default function NewListingPage() {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
 
+  // AI-extracted prefill data (from MagicBox)
+  const [aiPrefill, setAiPrefill] = useState(null);
+  const [magicFillUsed, setMagicFillUsed] = useState(false);
+
   // TODO: Pull tenantId and siteId from authenticated session / URL params
   const tenantId = 'tenant_demo';
   const siteId = 'site_demo';
+
+  /**
+   * Handle AI-parsed data from the MagicBox.
+   * Auto-selects the listing type and prepares prefill data.
+   */
+  const handleAiParsed = useCallback((data, mediaUrl) => {
+    setAiPrefill(data);
+    setMagicFillUsed(true);
+
+    // Auto-select the listing type from AI
+    if (data.type) {
+      setSelectedType(data.type);
+    }
+
+    // Add the analyzed image to media URLs if not already present
+    if (mediaUrl && !mediaUrls.includes(mediaUrl)) {
+      setMediaUrls((prev) => [...prev, mediaUrl]);
+    }
+  }, [mediaUrls]);
+
+  /**
+   * Handle additional media URL from MagicBox upload.
+   */
+  const handleMagicMediaUrl = useCallback((url) => {
+    if (url && !mediaUrls.includes(url)) {
+      setMediaUrls((prev) => [...prev, url]);
+    }
+  }, [mediaUrls]);
 
   const handleSubmit = async (formData) => {
     setIsSubmitting(true);
@@ -70,6 +108,11 @@ export default function NewListingPage() {
           </h2>
           <p className="text-gray-500 mb-6">
             Your listing is now live on your storefront and the CentralTexas marketplace.
+            {magicFillUsed && (
+              <span className="block mt-1 text-violet-500 text-sm font-medium">
+                ✨ Created with Magic Fill
+              </span>
+            )}
           </p>
           <div className="flex gap-3 justify-center">
             <button
@@ -77,6 +120,8 @@ export default function NewListingPage() {
                 setSuccess(false);
                 setSelectedType(null);
                 setMediaUrls([]);
+                setAiPrefill(null);
+                setMagicFillUsed(false);
               }}
               className="px-5 py-2.5 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors"
             >
@@ -116,10 +161,12 @@ export default function NewListingPage() {
               onClick={() => {
                 setSelectedType(null);
                 setError(null);
+                setAiPrefill(null);
+                setMagicFillUsed(false);
               }}
               className="text-sm text-gray-400 hover:text-gray-600 transition-colors"
             >
-              Change type
+              Start over
             </button>
           )}
         </div>
@@ -134,6 +181,29 @@ export default function NewListingPage() {
               <p className="text-sm font-medium text-red-700">Failed to create listing</p>
               <p className="text-sm text-red-600 mt-0.5">{error}</p>
             </div>
+          </div>
+        )}
+
+        {/* ── MAGIC BOX — Always visible before type selection ── */}
+        {!selectedType && (
+          <div className="mb-8">
+            <MagicBox
+              tenantId={tenantId}
+              onParsed={handleAiParsed}
+              onMediaUrl={handleMagicMediaUrl}
+              disabled={isSubmitting}
+            />
+          </div>
+        )}
+
+        {/* ── Divider between Magic Box and Manual ─────────── */}
+        {!selectedType && (
+          <div className="flex items-center gap-4 mb-8">
+            <div className="flex-1 h-px bg-gray-200" />
+            <span className="text-xs text-gray-400 font-medium uppercase tracking-wider">
+              or add manually
+            </span>
+            <div className="flex-1 h-px bg-gray-200" />
           </div>
         )}
 
@@ -208,17 +278,26 @@ export default function NewListingPage() {
         {/* ── STEP 2: Media Upload + Form ──────────────────── */}
         {selectedType && (
           <div className="space-y-8 animate-fadeIn">
-            {/* Type indicator */}
+            {/* Type indicator with Magic Fill badge */}
             <div className="flex items-center gap-3 p-4 bg-white rounded-xl border border-gray-100 shadow-sm">
               <span className="text-2xl">
                 {selectedType === 'service' ? '🛠️' : '📦'}
               </span>
-              <div>
-                <h3 className="text-sm font-bold text-gray-800">
-                  {selectedType === 'service' ? 'New Service' : 'New Physical Item'}
-                </h3>
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-bold text-gray-800">
+                    {selectedType === 'service' ? 'New Service' : 'New Physical Item'}
+                  </h3>
+                  {magicFillUsed && (
+                    <span className="px-2 py-0.5 bg-violet-100 text-violet-600 rounded-full text-xs font-medium">
+                      ✨ AI Pre-filled
+                    </span>
+                  )}
+                </div>
                 <p className="text-xs text-gray-400">
-                  Fill in the details below. Fields marked optional can be skipped.
+                  {magicFillUsed
+                    ? 'Review the AI-suggested details and edit as needed.'
+                    : 'Fill in the details below. Fields marked optional can be skipped.'}
                 </p>
               </div>
             </div>
@@ -238,18 +317,20 @@ export default function NewListingPage() {
               />
             </div>
 
-            {/* Form Fork */}
+            {/* Form Fork — with AI prefill data */}
             {selectedType === 'service' ? (
               <ServiceForm
                 onSubmit={handleSubmit}
                 isSubmitting={isSubmitting}
                 mediaUrls={mediaUrls}
+                prefill={aiPrefill}
               />
             ) : (
               <GoodForm
                 onSubmit={handleSubmit}
                 isSubmitting={isSubmitting}
                 mediaUrls={mediaUrls}
+                prefill={aiPrefill}
               />
             )}
           </div>

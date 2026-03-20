@@ -15,7 +15,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import VariantMatrix from './VariantMatrix';
 
 // Good-specific Zod schema
@@ -30,8 +30,9 @@ const goodSchema = z.object({
  * @param {Function} props.onSubmit     - Called with validated good data (including variants)
  * @param {boolean}  props.isSubmitting  - External submission state
  * @param {string[]} props.mediaUrls    - Already-uploaded media URLs
+ * @param {Object}   [props.prefill]    - AI-extracted prefill data from MagicBox
  */
-export default function GoodForm({ onSubmit, isSubmitting = false, mediaUrls = [] }) {
+export default function GoodForm({ onSubmit, isSubmitting = false, mediaUrls = [], prefill = null }) {
   const [priceDisplay, setPriceDisplay] = useState('');
   const [hasVariants, setHasVariants] = useState(false);
   const [variants, setVariants] = useState([]);
@@ -63,6 +64,30 @@ export default function GoodForm({ onSubmit, isSubmitting = false, mediaUrls = [
   const handleVariantsChange = useCallback((newVariants) => {
     setVariants(newVariants);
   }, []);
+
+  // ── AI Prefill: hydrate form when MagicBox returns data ──
+  useEffect(() => {
+    if (!prefill) return;
+
+    if (prefill.title) {
+      setValue('title', prefill.title, { shouldValidate: true });
+    }
+    if (prefill.description) {
+      setValue('description', prefill.description, { shouldValidate: true });
+    }
+    if (typeof prefill.basePrice === 'number' && prefill.basePrice > 0) {
+      setValue('basePrice', prefill.basePrice, { shouldValidate: true });
+      // Convert cents to dollar display
+      setPriceDisplay((prefill.basePrice / 100).toFixed(2));
+    }
+
+    // If AI suggested variant axes, enable variants and pre-populate
+    if (Array.isArray(prefill.suggestedVariants) && prefill.suggestedVariants.length > 0) {
+      setHasVariants(true);
+      // Note: VariantMatrix handles its own axes state.
+      // The suggestedVariants data will be shown in a hint.
+    }
+  }, [prefill, setValue]);
 
   const onFormSubmit = (data) => {
     onSubmit({
@@ -166,6 +191,20 @@ export default function GoodForm({ onSubmit, isSubmitting = false, mediaUrls = [
         {/* Variant Matrix */}
         {hasVariants && (
           <div className="mt-4 pt-4 border-t border-gray-200">
+            {/* AI suggestion hint */}
+            {prefill?.suggestedVariants?.length > 0 && (
+              <div className="mb-4 px-3 py-2 bg-violet-50 border border-violet-200 rounded-lg text-xs text-violet-700">
+                <span className="font-medium">✨ AI Suggestion:</span>{' '}
+                Try adding{' '}
+                {prefill.suggestedVariants.map((sv, i) => (
+                  <span key={sv.axisName}>
+                    <strong>{sv.axisName}</strong>
+                    {sv.values.length > 0 && ` (${sv.values.join(', ')})`}
+                    {i < prefill.suggestedVariants.length - 1 ? ', ' : ''}
+                  </span>
+                ))}
+              </div>
+            )}
             <VariantMatrix
               title={title}
               variants={variants}

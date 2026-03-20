@@ -15,7 +15,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 // Service-specific Zod schema
 const serviceSchema = z.object({
@@ -36,11 +36,12 @@ const BILLING_OPTIONS = [
 
 /**
  * @param {Object} props
- * @param {Function} props.onSubmit  - Called with validated service data
- * @param {boolean}  props.isSubmitting - External submission state
- * @param {string[]} props.mediaUrls - Already-uploaded media URLs
+ * @param {Function} props.onSubmit     - Called with validated service data
+ * @param {boolean}  props.isSubmitting  - External submission state
+ * @param {string[]} props.mediaUrls    - Already-uploaded media URLs
+ * @param {Object}   [props.prefill]    - AI-extracted prefill data from MagicBox
  */
-export default function ServiceForm({ onSubmit, isSubmitting = false, mediaUrls = [] }) {
+export default function ServiceForm({ onSubmit, isSubmitting = false, mediaUrls = [], prefill = null }) {
   const [priceDisplay, setPriceDisplay] = useState('');
 
   const {
@@ -59,6 +60,29 @@ export default function ServiceForm({ onSubmit, isSubmitting = false, mediaUrls 
       serviceRadiusMiles: null,
     },
   });
+
+  // ── AI Prefill: hydrate form when MagicBox returns data ──
+  useEffect(() => {
+    if (!prefill) return;
+
+    if (prefill.title) {
+      setValue('title', prefill.title, { shouldValidate: true });
+    }
+    if (prefill.description) {
+      setValue('description', prefill.description, { shouldValidate: true });
+    }
+    if (prefill.billingModel) {
+      setValue('billingModel', prefill.billingModel, { shouldValidate: true });
+    }
+    if (typeof prefill.basePrice === 'number' && prefill.basePrice > 0) {
+      setValue('basePrice', prefill.basePrice, { shouldValidate: true });
+      // Convert cents to dollar display
+      setPriceDisplay((prefill.basePrice / 100).toFixed(2));
+    }
+    if (typeof prefill.serviceRadiusMiles === 'number') {
+      setValue('serviceRadiusMiles', prefill.serviceRadiusMiles, { shouldValidate: true });
+    }
+  }, [prefill, setValue]);
 
   const selectedBilling = watch('billingModel');
 
