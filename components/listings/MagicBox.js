@@ -21,8 +21,9 @@
 'use client';
 
 import { useState, useRef, useCallback } from 'react';
-import { uploadMedia, buildMediaPath, IMAGE_TYPES } from '@/utils/uploadMedia';
+import { uploadMedia, buildMediaPath, IMAGE_TYPES, VIDEO_TYPES, ALL_MEDIA_TYPES } from '@/utils/uploadMedia';
 import { parseMediaWithGemini } from '@/app/actions/ai-parser';
+import VoiceMemo from './VoiceMemo';
 
 // ───────────────────────────────────────────────
 // State machine for the Magic Box UX
@@ -60,13 +61,13 @@ export default function MagicBox({ tenantId, onParsed, onMediaUrl, disabled = fa
     if (!file) return;
 
     // Validate file type
-    if (!IMAGE_TYPES.includes(file.type)) {
-      setError('Please upload an image (JPEG, PNG, GIF, or WebP).');
+    if (!ALL_MEDIA_TYPES.includes(file.type)) {
+      setError('Unsupported file type. Please use an image, video, or audio file.');
       setState(STATES.ERROR);
       return;
     }
 
-    // Show local preview immediately
+    // Show local preview immediately (for UI purposes, though videos/audio might show generic icons)
     setPreview(URL.createObjectURL(file));
     setError(null);
     setWarnings([]);
@@ -164,7 +165,7 @@ export default function MagicBox({ tenantId, onParsed, onMediaUrl, disabled = fa
       <input
         ref={fileInputRef}
         type="file"
-        accept={IMAGE_TYPES.join(',')}
+        accept={[...IMAGE_TYPES, ...VIDEO_TYPES].join(',')}
         onChange={handleFileSelect}
         className="hidden"
         id="magic-box-file-input"
@@ -191,20 +192,27 @@ export default function MagicBox({ tenantId, onParsed, onMediaUrl, disabled = fa
             </div>
             <div>
               <h3 className="text-base font-bold text-gray-800">
-                Magic Fill — Drop a photo
+                Magic Fill — Drop a media file
               </h3>
               <p className="text-sm text-gray-500 mt-1 max-w-sm mx-auto leading-relaxed">
-                AI will analyze your image and auto-fill the listing details.
+                AI will analyze your image or video to auto-fill the listing details.
                 You review and edit before publishing.
               </p>
             </div>
             <div className="flex items-center gap-2 text-xs text-violet-500 font-medium">
-              <span className="px-2.5 py-1 bg-violet-100 rounded-full">📸 Photos</span>
+              <span className="px-2.5 py-1 bg-violet-100 rounded-full">📸 Photos & Videos</span>
               <span className="text-violet-300">•</span>
               <span className="text-violet-400">Powered by Gemini AI</span>
             </div>
           </div>
         </button>
+      )}
+
+      {/* Voice Memo component in IDLE state */}
+      {state === STATES.IDLE && (
+        <div className="mt-4 flex justify-center">
+          <VoiceMemo onRecordComplete={handleFile} disabled={disabled} />
+        </div>
       )}
 
       {/* ── UPLOADING STATE ─────────────────────── */}

@@ -18,6 +18,7 @@
 
 import { adminDb } from '@/lib/firebase/admin';
 import { listingSchema } from '@/lib/validations/listingSchema';
+import Stripe from 'stripe';
 
 /**
  * Generate a deterministic SKU string from a listing title and variant options.
@@ -135,6 +136,65 @@ export async function createListing(rawFormData, tenantId, siteId) {
     await batch.commit();
 
     console.log(`[createListing] ✅ Listing created: ${listingRef.id} (type=${data.type}, variants=${data.variants?.length || 0})`);
+
+    // ── Step 4: Sync with Stripe (Best Effort) ────────────────────
+    let stripeProductId = null;
+    try {
+      if (process.env.STRIPE_SECRET_KEY) {
+        // Init Stripe (using API version for stability)
+        const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+          apiVersion: '2024-06-20', // Current version or latest
+        });
+
+        // 1. Create the Stripe Product
+        const product = await stripe.products.create({
+          name: data.title,
+          description: data.description || '',
+          images: data.mediaUrls && data.mediaUrls.length > 0 ? data.mediaUrls.slice(0, 8) : [],
+          metadata: {
+            listingId: listingRef.id,
+            tenantId,
+            siteId,
+            type: data.type,
+          },
+        });
+        stripeProductId = product.id;
+
+        // 2. Create the Stripe Price(s)
+        if (data.type === 'service' || !data.variants || data.variants.length === 0) {
+          // Single base price
+          await stripe.prices.create({
+            product: stripeProductId,
+            unit_amount: data.basePrice,
+            currency: 'usd',
+          });
+        } else {
+          // One price per variant
+          for (const variant of data.variants) {
+            const sku = variant.sku || generateSKU(data.title, variant.options);
+            await stripe.prices.create({
+              product: stripeProductId,
+              unit_amount: variant.priceOverride ?? data.basePrice,
+              currency: 'usd',
+              metadata: { sku },
+            });
+          }
+        }
+
+        // 3. Update the Firestore listing with the Stripe ID
+        await adminDb.collection('listings').doc(listingRef.id).update({
+          stripeProductId,
+        });
+
+        console.log(`[createListing] ✅ Stripe sync complete: ${stripeProductId}`);
+      } else {
+        console.warn('[createListing] STRIPE_SECRET_KEY not set. Skipping Stripe sync.');
+      }
+    } catch (stripeError) {
+      console.error('[createListing] ⚠️ Stripe sync failed, but listing was saved:', stripeError.message);
+      // We don't fail the whole action here. The listing is safely in Firestore.
+      // In production, you might write to a dead-letter queue for retry.
+    }
 
     return { success: true, listingId: listingRef.id };
   } catch (error) {

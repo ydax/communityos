@@ -13,7 +13,13 @@
 'use client';
 
 import { useState, useRef, useCallback } from 'react';
-import { uploadMedia, buildMediaPath, IMAGE_TYPES } from '@/utils/uploadMedia';
+import { uploadMedia, buildMediaPath, IMAGE_TYPES, VIDEO_TYPES } from '@/utils/uploadMedia';
+
+// Helper to guess if a URL is a video based on extension
+const isVideoUrl = (url) => {
+  if (!url) return false;
+  return url.match(/\.(mp4|webm|mov|quicktime)($|\?)/i);
+};
 
 /**
  * @param {Object}   props
@@ -102,17 +108,27 @@ export default function MediaDropzone({
       {urls.length > 0 && (
         <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
           {urls.map((url, index) => (
-            <div key={index} className="relative group aspect-square rounded-lg overflow-hidden">
-              <img
-                src={url}
-                alt={`Upload ${index + 1}`}
-                className="w-full h-full object-cover"
-              />
+            <div key={index} className="relative group aspect-square rounded-lg overflow-hidden bg-gray-100 border border-gray-200">
+              {isVideoUrl(url) ? (
+                <video
+                  src={url}
+                  className="w-full h-full object-cover"
+                  preload="metadata"
+                  muted
+                  controls
+                />
+              ) : (
+                <img
+                  src={url}
+                  alt={`Upload ${index + 1}`}
+                  className="w-full h-full object-cover"
+                />
+              )}
               <button
                 type="button"
                 onClick={() => removeUrl(index)}
                 disabled={disabled}
-                className="absolute top-1 right-1 w-6 h-6 bg-black/60 text-white rounded-full flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500"
+                className="absolute top-1 right-1 w-6 h-6 bg-black/60 text-white rounded-full flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500 z-10"
               >
                 ✕
               </button>
@@ -127,7 +143,7 @@ export default function MediaDropzone({
           <input
             ref={fileInputRef}
             type="file"
-            accept={IMAGE_TYPES.join(',')}
+            accept={[...IMAGE_TYPES, ...VIDEO_TYPES].join(',')}
             multiple
             onChange={(e) => handleFiles(e.target.files)}
             className="hidden"
@@ -164,7 +180,7 @@ export default function MediaDropzone({
               <>
                 <div className="text-3xl">📸</div>
                 <span className="text-sm font-medium text-gray-600">
-                  {urls.length === 0 ? 'Add photos' : 'Add more photos'}
+                  {urls.length === 0 ? 'Add photos \u0026 videos' : 'Add more media'}
                 </span>
                 <span className="text-xs text-gray-400">
                   Drag \u0026 drop or tap to browse • {urls.length}/{maxFiles} uploaded
