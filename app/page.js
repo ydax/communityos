@@ -73,7 +73,7 @@ export default function HomePage() {
             </h1>
             <p className="text-lg md:text-xl lg:text-2xl text-trade-muted mb-6 leading-relaxed max-w-3xl mx-auto">
               Build a beautiful, mobile-perfect site on your own domain —
-              completely free. Built for service businesses in the I-35
+              completely free. Built for local businesses in the I-35
               corridor.
             </p>
 
@@ -177,7 +177,7 @@ export default function HomePage() {
               Everything You Need to Succeed Online
             </h2>
             <p className="text-lg md:text-xl text-trade-muted max-w-2xl mx-auto">
-              Professional features designed for service businesses
+              Professional features designed for local businesses
             </p>
           </div>
 
@@ -438,7 +438,7 @@ export default function HomePage() {
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto text-center">
             <h2 className="text-2xl md:text-3xl font-bold text-trade-dark mb-8">
-              Trusted by Service Professionals Across Central Texas
+              Trusted by Local Businesses Across Central Texas
             </h2>
 
             <div className="grid md:grid-cols-3 gap-6 mb-10">
@@ -456,11 +456,11 @@ export default function HomePage() {
                   ))}
                 </div>
                 <p className="text-trade-muted italic mb-3 text-sm leading-relaxed">
-                  "Setup was incredibly easy. Had my fencing business online in
-                  under 10 minutes."
+                  "Setup was incredibly easy. Had my catering business online
+                  in under 10 minutes."
                 </p>
                 <p className="text-sm font-semibold text-trade-dark">
-                  — Fencing Contractor, Austin
+                  — Local Caterer, Austin
                 </p>
               </div>
 
@@ -504,7 +504,7 @@ export default function HomePage() {
                   right from my site."
                 </p>
                 <p className="text-sm font-semibold text-trade-dark">
-                  — Landscaping Pro, Round Rock
+                  — Event Planner, Round Rock
                 </p>
               </div>
             </div>
@@ -570,7 +570,7 @@ export default function HomePage() {
                 Ready to Get Started?
               </h2>
               <p className="text-lg md:text-xl mb-2 opacity-90">
-                Join 50+ service providers already building their online
+                Join 50+ local businesses already building their online
                 presence
               </p>
               <p className="text-sm mb-8 opacity-75">

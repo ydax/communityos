@@ -199,7 +199,7 @@ export default function ListingDialog({
                 "w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-trade-primary focus:border-transparent",
                 errors.title ? "border-red-500" : "border-gray-300",
               )}
-              placeholder="e.g., Fence Repair Service"
+              placeholder="e.g., Weekend Catering Package"
             />
             {errors.title && (
               <p className="mt-1 text-sm text-red-600">{errors.title}</p>
@@ -266,7 +266,7 @@ export default function ListingDialog({
                 "w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-trade-primary focus:border-transparent",
                 errors.category ? "border-red-500" : "border-gray-300",
               )}
-              placeholder="e.g., fence_repair, landscaping"
+              placeholder="e.g., catering, photography, landscaping"
             />
             {errors.category && (
               <p className="mt-1 text-sm text-red-600">{errors.category}</p>

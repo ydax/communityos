@@ -32,13 +32,12 @@ export default function AddListingStep({
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
+  const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef(null);
 
-  const handleImageSelect = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const processFile = (file) => {
+    if (!file || !file.type.startsWith("image/")) return;
 
-    // Create preview
     const reader = new FileReader();
     reader.onload = (ev) => {
       setListing((prev) => ({
@@ -48,6 +47,28 @@ export default function AddListingStep({
       }));
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleImageSelect = (e) => {
+    const file = e.target.files?.[0];
+    processFile(file);
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    processFile(file);
   };
 
   const handleSubmit = async () => {
@@ -119,11 +140,10 @@ export default function AddListingStep({
       <div className="text-center">
         <div className="text-4xl mb-2">🎯</div>
         <h3 className="text-xl font-bold text-gray-800">
-          Let&apos;s get you some customers
+          Add Your First Product or Service
         </h3>
         <p className="text-gray-500 text-sm mt-1">
-          Add your first service to make your site live AND push it to the
-          CentralTexas.com marketplace.
+          To make your website useful, let's add at least one thing customers can buy or book. This will appear on your new site AND in the local CentralTexas marketplace.
         </p>
       </div>
 
@@ -133,13 +153,17 @@ export default function AddListingStep({
           ref={fileInputRef}
           type="file"
           accept="image/*"
-          capture="environment"
           onChange={handleImageSelect}
           className="hidden"
         />
 
         {listing.imagePreview ? (
-          <div className="relative rounded-xl overflow-hidden shadow-md">
+          <div 
+            className="relative rounded-xl overflow-hidden shadow-md"
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+          >
             <img
               src={listing.imagePreview}
               alt="Service preview"
@@ -157,11 +181,18 @@ export default function AddListingStep({
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="w-full h-48 border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center gap-2 hover:border-blue-400 hover:bg-blue-50 transition-colors"
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            className={`w-full h-48 border-2 border-dashed rounded-xl flex flex-col items-center justify-center gap-2 transition-colors ${
+              isDragging 
+                ? "border-blue-500 bg-blue-100" 
+                : "border-gray-300 hover:border-blue-400 hover:bg-blue-50"
+            }`}
           >
             <div className="text-4xl">📸</div>
             <span className="text-sm font-medium text-gray-500">
-              Tap to add a photo
+              Tap or drag to add a photo
             </span>
             <span className="text-xs text-gray-400">
               Show off your best work!
@@ -176,7 +207,7 @@ export default function AddListingStep({
           type="text"
           value={listing.title}
           onChange={(e) => setListing((p) => ({ ...p, title: e.target.value }))}
-          placeholder="Service name (e.g., Fence Repair, Plumbing Inspection)"
+          placeholder="Service or product name (e.g., Event Catering, Guitar Lessons)"
           className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base"
           disabled={isSubmitting}
           maxLength={100}

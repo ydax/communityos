@@ -6,7 +6,7 @@ CommunityOS is a franchisable SaaS-enabled marketplace platform. Give local busi
 
 ## Node 1: [CentralTexas.com](https://centraltexas.com)
 
-The first deployment targets the I-35 Innovation Corridor (Austin ↔ San Antonio), focused on Home Services (Fencing, Plumbing, Landscaping, Roofing).
+The first deployment targets the I-35 Innovation Corridor (Austin ↔ San Antonio), welcoming all local businesses — from service providers to retailers, caterers, event organizers, and more.
 
 ### What It Does
 

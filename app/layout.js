@@ -6,27 +6,30 @@ import "./globals.css";
  */
 export const metadata = {
   title: {
-    default: "CentralTexas.com - Free Websites for Service Businesses",
+    default: "CentralTexas.com - Free Websites for Local Businesses",
     template: "%s | CentralTexas.com",
   },
   description:
-    "Build a beautiful, mobile-perfect website on your own domain — completely free. Built for service businesses in the I-35 Innovation Corridor between Austin and San Antonio.",
+    "Build a beautiful, mobile-perfect website on your own domain — completely free. Built for local businesses in the I-35 Innovation Corridor between Austin and San Antonio.",
   keywords: [
     "marketplace",
     "central texas",
-    "home services",
+    "local business",
     "austin",
     "san antonio",
     "free website",
-    "service business",
+    "events",
+    "catering",
+    "retail",
+    "services",
   ],
   authors: [{ name: "Davis Jones" }],
   viewport: "width=device-width, initial-scale=1",
   themeColor: "#E8495A",
   openGraph: {
-    title: "CentralTexas.com - Free Websites for Service Businesses",
+    title: "CentralTexas.com - Free Websites for Local Businesses",
     description:
-      "Build a beautiful, mobile-perfect website on your own domain — completely free. Built for service businesses along I-35.",
+      "Build a beautiful, mobile-perfect website on your own domain — completely free. Built for local businesses along I-35.",
     url: "https://centraltexas.com",
     siteName: "CentralTexas.com",
     images: [
@@ -42,7 +45,7 @@ export const metadata = {
   },
   twitter: {
     card: "summary",
-    title: "CentralTexas.com - Free Websites for Service Businesses",
+    title: "CentralTexas.com - Free Websites for Local Businesses",
     description:
       "Build a beautiful, mobile-perfect website on your own domain — completely free.",
     images: ["/logo-512.png"],

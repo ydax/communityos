@@ -127,7 +127,7 @@ export default function MarketplacePage() {
         </div>
         <div className="container mx-auto max-w-6xl px-4 pb-16 pt-8">
           <h1 className="text-5xl font-bold mb-4">
-            Discover Local Home Services
+            Discover Local Businesses & Services
           </h1>
           <p className="text-xl opacity-90">
             Find trusted service providers across Central Texas
@@ -368,7 +368,7 @@ export default function MarketplacePage() {
       <section className="bg-blue-600 text-white py-16 px-4">
         <div className="container mx-auto max-w-4xl text-center">
           <h2 className="text-4xl font-bold mb-4">
-            Are you a service provider?
+            Are you a local business?
           </h2>
           <p className="text-xl mb-8 opacity-90">
             Get your own professional website and join our marketplace — it's

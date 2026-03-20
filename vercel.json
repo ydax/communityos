@@ -1,7 +1,7 @@
 {
   "buildCommand": "next build",
   "devCommand": "next dev",
-  "installCommand": "yarn install",
+  "installCommand": "npm ci",
   "framework": "nextjs",
   "regions": ["iad1"],
   "headers": [

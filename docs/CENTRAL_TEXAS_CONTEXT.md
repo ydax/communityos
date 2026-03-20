@@ -16,7 +16,7 @@ You are the AI assistant for **CivicOS**, an open-source, franchisable local com
 
 **Core Strategy:** Provide the **Tool** (Free Custom-Domain Websites) to acquire the **Supply** (Structured Service/Goods Inventory).
 
-**Key Constraint:** We launch in **Home Services** vertical first (Fencing, Plumbing, Landscaping) to achieve marketplace liquidity via a focused "Atomic Network."
+**Key Strategy:** We launch with **broad local business appeal** — welcoming service providers, retailers, caterers, event organizers, and any local organization — to build a diverse and vibrant marketplace.
 
 **CivicOS Principle:** CentralTexas.com is the proving ground. The codebase is being evolved toward a deployable template so any community can stand up their own node — but we ship product first, abstract framework second.
 
@@ -39,7 +39,7 @@ You are the AI assistant for **CivicOS**, an open-source, franchisable local com
 
 Since we're "giving away websites," our sales motion is **Gifting**, not Selling:
 
-- Target: 50 Home Service providers with no/poor web presence
+- Target: 50 local businesses with no/poor web presence
 - Tactic: Pre-build a site for them, DM: "I built this for you. It's free."
 - Upsell: For top prospects, buy the domain for them ($12/year)
 
@@ -47,7 +47,7 @@ Since we're "giving away websites," our sales motion is **Gifting**, not Selling
 
 ## 📊 SUCCESS METRICS
 
-- **North Star:** 50 Active Custom Domains (Home Services Focus)
+- **North Star:** 50 Active Custom Domains (All Local Business Types)
 - **Revenue:** $5k Gross Payment Volume (GPV) run rate
 - **Operational:** < 3 min per "AI Review & Approve" site build time
 - **Quality:** 80%+ items with structured variants vs free text
@@ -98,7 +98,7 @@ graph TD
 **Growth Experiments:** [`../../centraltexas/projects/ctx-growth-experiments.md`](../../centraltexas/projects/ctx-growth-experiments.md)  
 **Key Concepts:**
 
-- **Vertical Constraint:** Home Services first (Fencing, Plumbing, Landscaping, Roofing)
+- **Open to All Verticals:** Service providers, retailers, caterers, event organizers, and more
 - **Revenue Model:** 10% transaction fee OR $29/mo subscription (>$2k/mo sellers)
 - **Acquisition:** "Ghost Agency" pre-builds sites as gifts
 - **Network Effect:** "Powered by CentralTexas.com" footer + Cross-sell modal
@@ -610,13 +610,13 @@ Deploy the current branch to a Vercel Preview environment
 - Vercel: All interactions via `vercel` CLI
 - Stripe: Webhooks/config managed via code in repo
 
-### The "Vertical First" Rule
+### The "Broad Appeal" Rule
 
-**DO NOT sign up sellers outside Home Services during MVP.**
+**DO welcome sellers from all local business types during MVP.**
 
-- Data model supports Goods (future-proof)
-- Sales motion targets Service Pros only
-- Expand to other verticals post-liquidity
+- Data model supports both Services and Goods
+- Sales motion targets any local business with no/poor web presence
+- Build marketplace density through diverse local supply
 
 ### The "No Hardcoded Locale" Rule (CivicOS)
 

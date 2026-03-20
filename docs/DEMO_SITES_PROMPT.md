@@ -27,7 +27,7 @@ CentralTexas.com is a **"SaaS-Enabled Marketplace"** that uses a "Trojan Horse" 
 
 ### Strategic Constraints
 
-1. **Vertical Focus:** Home Services first (Fencing, Plumbing, Landscaping, HVAC, Electrical, etc.) to achieve marketplace liquidity
+1. **Open to All Verticals:** Welcoming all local businesses (services, retail, catering, events, etc.) to achieve marketplace diversity
 2. **Geographic Focus:** I-35 Innovation Corridor (Austin ↔ San Antonio)
 3. **Revenue Model:** 10% transaction fee OR $29/mo subscription for high-volume sellers
 4. **Acquisition Strategy:** "Ghost Agency" - we pre-build sites and gift them to service providers
@@ -190,7 +190,7 @@ But I don't want to:
 **Provide a strategic recommendation for setting up 3 demo sites that:**
 
 1. **Feel Real:** Business names, services, pricing, and imagery feel authentic
-2. **Show Diversity:** Demonstrate different service categories within Home Services vertical
+2. **Show Diversity:** Demonstrate different business categories (services, retail, events, etc.)
 3. **Showcase Features:** Each site should highlight different platform capabilities
 4. **Are Low-Maintenance:** Easy to set up, minimal ongoing updates needed
 5. **Work Within Constraints:** Use subdomains (`*.centraltexas.com`) instead of custom domains if that's simpler
@@ -202,8 +202,8 @@ But I don't want to:
 
 ### 1. Demo Site Selection Strategy
 
-**Recommend 3 specific home service businesses:**
-- What business types? (e.g., Fencing, Plumbing, Landscaping, HVAC, Electrical, Pool Service, etc.)
+**Recommend 3 specific local businesses:**
+- What business types? (e.g., Catering, Event Planning, Retail, Landscaping, Photography, etc.)
 - Why these specific three? (What does each demonstrate about the platform?)
 - What geographic locations within Austin-San Antonio corridor?
 

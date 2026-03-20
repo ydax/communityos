@@ -3,7 +3,7 @@ import ServicesSection from "../sections/ServicesSection.js";
 
 /**
  * "The Trade" Theme
- * Professional services aesthetic for home service providers
+ * Professional services aesthetic for local businesses
  *
  * Hero layout variants: 'clean' (default), 'bold', 'minimal'
  *

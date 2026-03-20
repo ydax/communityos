@@ -4,7 +4,7 @@ import ServicesSection from "../sections/ServicesSection.js";
 /**
  * "The Venue" Theme
  * Visual/experiential focus for high-end services
- * Ideal for landscaping, events, design services that emphasize aesthetics and portfolios
+ * Ideal for events, design services, restaurants, and visual brands that emphasize aesthetics and portfolios
  *
  * Hero layout variants: 'cinematic' (default), 'split', 'gallery'
  *

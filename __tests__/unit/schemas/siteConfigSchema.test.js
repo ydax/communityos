@@ -180,10 +180,18 @@ describe("validateSiteConfig", () => {
     expect(result.errors.some((e) => e.includes("businessName"))).toBe(true);
   });
 
-  it("should reject invalid categories", () => {
+  it("should accept unknown categories (lenient validation)", () => {
     const result = validateSiteConfig({
       ...validConfig,
       category: "restaurants",
+    });
+    expect(result.valid).toBe(true);
+  });
+
+  it("should reject empty category strings", () => {
+    const result = validateSiteConfig({
+      ...validConfig,
+      category: "",
     });
     expect(result.valid).toBe(false);
     expect(result.errors.some((e) => e.includes("category"))).toBe(true);

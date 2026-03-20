@@ -22,13 +22,29 @@ import AddListingStep from "../../components/onboarding/AddListingStep.js";
  */
 
 const CATEGORIES = [
-  { value: "fencing", label: "Fencing & Deck Installation" },
+  // Local Services
+  { value: "general_contractor", label: "General Contractor" },
   { value: "plumbing", label: "Plumbing Services" },
-  { value: "landscaping", label: "Landscaping & Lawn Care" },
+  { value: "electrical", label: "Electrical Services" },
   { value: "hvac", label: "HVAC & Air Conditioning" },
   { value: "roofing", label: "Roofing & Siding" },
-  { value: "electrical", label: "Electrical Services" },
-  { value: "general_contractor", label: "General Contractor" },
+  { value: "fencing", label: "Fencing & Deck Installation" },
+  { value: "landscaping", label: "Landscaping & Lawn Care" },
+  { value: "cleaning", label: "Cleaning Services" },
+  { value: "moving", label: "Moving & Hauling" },
+  { value: "automotive", label: "Automotive Services" },
+  // Local Business
+  { value: "events", label: "Events & Entertainment" },
+  { value: "catering", label: "Catering & Food" },
+  { value: "retail", label: "Retail & Shopping" },
+  { value: "beauty", label: "Beauty & Wellness" },
+  { value: "fitness", label: "Fitness & Training" },
+  { value: "photography", label: "Photography & Media" },
+  { value: "education", label: "Education & Tutoring" },
+  { value: "consulting", label: "Consulting & Professional" },
+  { value: "pet_services", label: "Pet Services" },
+  { value: "nonprofit", label: "Nonprofit & Community" },
+  { value: "other", label: "Other" },
 ];
 
 const STEPS = [
@@ -285,7 +301,7 @@ export default function GetStartedPage() {
                     subdomain: p.subdomain || generateSubdomain(name),
                   }));
                 }}
-                placeholder="Joe's Fencing & Repair"
+                placeholder="Maria's Catering"
                 className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base"
                 maxLength={100}
               />
@@ -302,7 +318,7 @@ export default function GetStartedPage() {
                 }
                 className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base appearance-none bg-white"
               >
-                <option value="">Select your trade...</option>
+                <option value="">Select your business type...</option>
                 {CATEGORIES.map((cat) => (
                   <option key={cat.value} value={cat.value}>
                     {cat.label}

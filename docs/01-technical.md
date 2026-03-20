@@ -247,12 +247,13 @@ businessName; // String - Business display name (e.g., "Joe's Fencing & Repair")
 description; // String - Business description (max 500 chars)
 // Optional. Used for SEO and marketplace profiles.
 
-category; // String - Business category (e.g., "fencing", "plumbing", "landscaping")
+category; // String - Business category (e.g., "fencing", "catering", "retail")
 // REQUIRED. Enum-like values. Used for marketplace filtering.
-// Initial values: ["fencing", "plumbing", "landscaping", "electrical", "hvac", "roofing", "general_contractor"]
+// Curated values: ["fencing", "plumbing", "landscaping", "electrical", "hvac", "roofing", "general_contractor", "events", "catering", "food", "retail", "beauty", "fitness", "photography", "education", "consulting", "other"]
+// Custom values also accepted.
 
 location; // Object - Business location data
-// REQUIRED for Home Services. Used for geo-radius search.
+// Optional. Used for geo-radius search when relevant.
 location.city; // String - City name (e.g., "Kyle")
 location.state; // String - State code (e.g., "TX")
 location.zip; // String - ZIP code (e.g., "78640")
@@ -1803,15 +1804,15 @@ service cloud.firestore {
 - Fixed layout templates (3 themes)
 - Users can only edit: Text, Colors (preset), Section visibility
 
-### 4. Vertical Constraint (Home Services First)
+### 4. Open to All Business Types
 
-**Rationale:** Achieve marketplace liquidity via focused "Atomic Network."
+**Rationale:** Welcome all local businesses to build marketplace density and diversity.
 
 **Rules:**
 
-- MVP targets Home Services ONLY (Fencing, Plumbing, Landscaping)
-- Data model supports Goods (future-proof) but sales motion excludes them
-- Expand to other verticals post-liquidity
+- Platform supports any local business type — services, goods, events, and more
+- Data model supports both Services and Goods with rich variant/inventory tracking
+- Category list is curated but accepts custom values to avoid blocking new business types
 
 ---
 
