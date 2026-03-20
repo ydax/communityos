@@ -40,14 +40,14 @@ async function callGemini(systemPrompt, userPrompt) {
     throw new Error("GOOGLE_GENAI_API_KEY is not configured");
   }
 
-  const endpoint = `${getGeminiModelEndpoint(AI_MODELS.siteBuilder)}?key=${apiKey}`;
+  const endpoint = `${getGeminiModelEndpoint(AI_MODELS.flash)}?key=${apiKey}`;
 
   log.debug("[callGemini] Sending request", {
-    model: AI_MODELS.siteBuilder,
+    model: AI_MODELS.flash,
     promptLength: userPrompt.length,
   });
 
-  const timer = log.startTimer("gemini-api-call", { model: AI_MODELS.siteBuilder });
+  const timer = log.startTimer("gemini-api-call", { model: AI_MODELS.flash });
 
   // Use the REST API directly to avoid SDK import issues in edge/serverless
   const response = await fetch(endpoint, {

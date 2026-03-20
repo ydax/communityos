@@ -256,15 +256,23 @@ function ListingsPageContent({ db }) {
                 Item Library
               </h1>
             </div>
-            <button
-              onClick={() => {
-                setEditingListing(null);
-                setIsDialogOpen(true);
-              }}
-              className="px-6 py-3 bg-trade-primary text-white rounded-lg font-semibold hover:bg-trade-dark transition-colors"
-            >
-              + Add Item
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => {
+                  setEditingListing(null);
+                  setIsDialogOpen(true);
+                }}
+                className="px-4 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
+              >
+                Quick Add
+              </button>
+              <Link
+                href="/admin/listings/new"
+                className="px-6 py-3 bg-trade-primary text-white rounded-lg font-semibold hover:bg-trade-dark transition-colors"
+              >
+                + Add Item
+              </Link>
+            </div>
           </div>
         </div>
       </header>
