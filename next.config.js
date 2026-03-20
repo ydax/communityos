@@ -54,13 +54,14 @@ const nextConfig = {
     serverActions: {
       allowedOrigins: ["localhost:3000", "*.centraltexas.com"],
     },
-    // These packages use native Node.js APIs and must NOT be bundled by webpack.
-    // They will be loaded at runtime by the Node.js serverless runtime instead.
-    serverExternalPackages: [
-      "@google-cloud/logging",
-      "firebase-admin",
-    ],
   },
+
+  // These packages use native Node.js APIs and must NOT be bundled by webpack.
+  // They will be loaded at runtime by the Node.js serverless runtime instead.
+  serverExternalPackages: [
+    "@google-cloud/logging",
+    "firebase-admin",
+  ],
 };
 
 module.exports = nextConfig;
