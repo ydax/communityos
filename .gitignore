@@ -36,8 +36,11 @@ yarn-error.log*
 .idea/
 
 # Firebase service account keys (NEVER commit these!)
-*firebase*.json
-service-account*.json
+firebase-adminsdk*.json
+*-firebase-adminsdk-*.json
+*service-account*.json
+firebase-debug.log
+firebase-debug.*.log
 
 # Vercel
 .vercel
