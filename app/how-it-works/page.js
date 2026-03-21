@@ -15,7 +15,7 @@ export default function HowItWorksPage() {
               How It Works
             </h1>
             <p className="text-lg md:text-xl text-trade-muted max-w-2xl mx-auto">
-              A free website builder for service providers, powered by a local
+              A free website builder for small and medium-sized businesses, powered by a local
               marketplace.
             </p>
           </div>
@@ -41,7 +41,7 @@ export default function HowItWorksPage() {
                   Get Your Site
                 </h3>
                 <p className="text-trade-muted leading-relaxed">
-                  We build a professional website for your service business on
+                  We build a professional website for your business on
                   your own custom domain.
                 </p>
               </div>
@@ -51,10 +51,10 @@ export default function HowItWorksPage() {
                   2
                 </div>
                 <h3 className="text-lg md:text-xl font-bold text-trade-dark mb-3">
-                  Manage Services
+                  Manage Listings
                 </h3>
                 <p className="text-trade-muted leading-relaxed">
-                  Add your services, pricing, and availability using our simple
+                  List your products, services, and events using our simple
                   admin tools.
                 </p>
               </div>
@@ -67,7 +67,7 @@ export default function HowItWorksPage() {
                   Get Discovered
                 </h3>
                 <p className="text-trade-muted leading-relaxed">
-                  Your services automatically appear on CentralTexas.com where
+                  Your listings automatically appear on CentralTexas.com where
                   local customers search.
                 </p>
               </div>
@@ -144,8 +144,8 @@ export default function HowItWorksPage() {
                       We Get the Network
                     </h4>
                     <p className="text-trade-muted leading-relaxed">
-                      Your services feed into our local marketplace, helping
-                      customers find trusted providers.
+                      Your business feeds into our local marketplace, helping
+                      customers discover trusted local companies.
                     </p>
                   </div>
                 </div>
@@ -257,10 +257,10 @@ export default function HowItWorksPage() {
                   </svg>
                   <div>
                     <h4 className="font-bold text-trade-dark mb-1">
-                      Service Listings
+                      Platform Listings
                     </h4>
                     <p className="text-trade-muted text-sm leading-relaxed">
-                      Showcase your services with photos, descriptions, and
+                      Showcase your products, services, and events with photos, descriptions, and
                       pricing
                     </p>
                   </div>
@@ -283,7 +283,7 @@ export default function HowItWorksPage() {
                       Online Booking
                     </h4>
                     <p className="text-trade-muted text-sm leading-relaxed">
-                      Let customers request quotes and book services directly
+                      Let customers request quotes, buy products, and book directly
                     </p>
                   </div>
                 </div>
@@ -381,5 +381,5 @@ export default function HowItWorksPage() {
 export const metadata = {
   title: "How It Works - CentralTexas.com",
   description:
-    "Learn how CentralTexas.com provides free websites for service providers through our SaaS-enabled marketplace model.",
+    "Learn how CentralTexas.com provides free websites for small and medium-sized businesses through our SaaS-enabled marketplace model.",
 };
