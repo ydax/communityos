@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { uploadMedia, buildMediaPath } from "@/utils/uploadMedia";
 
 /**
  * AddListingStep Component
@@ -81,22 +82,12 @@ export default function AddListingStep({
     setError(null);
 
     try {
-      // Upload image if present
+      // Upload image directly to Firebase Storage from the browser.
+      // WHY: avoids Vercel's 4.5MB body limit and server-side admin SDK complexity.
       let imageUrl = null;
       if (listing.imageFile) {
-        const formData = new FormData();
-        formData.append("file", listing.imageFile);
-        formData.append("path", `listings/${siteId}`);
-
-        const uploadRes = await fetch("/api/upload", {
-          method: "POST",
-          body: formData,
-        });
-
-        if (uploadRes.ok) {
-          const uploadData = await uploadRes.json();
-          imageUrl = uploadData.url;
-        }
+        const storagePath = buildMediaPath(siteId, listing.imageFile.name, "listing");
+        imageUrl = await uploadMedia(listing.imageFile, storagePath);
       }
 
       // Create listing
