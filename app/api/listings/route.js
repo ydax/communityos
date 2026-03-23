@@ -7,6 +7,8 @@ import {
   deleteListing,
   listListings,
 } from "@/lib/dbServices/listingsService";
+import { adminAuth } from "@/lib/firebase/admin";
+import { cookies } from "next/headers";
 
 // Initialize Firebase Admin
 if (!getApps().length) {
@@ -61,6 +63,18 @@ export async function POST(request) {
   try {
     const body = await request.json();
     const db = getFirestore();
+    const cookieStore = await cookies();
+    const sessionCookie = cookieStore.get("session")?.value;
+    
+    // Auto-inject ownerId if authenticated
+    if (sessionCookie) {
+      try {
+        const decoded = await adminAuth.verifySessionCookie(sessionCookie, true);
+        body.ownerId = decoded.uid;
+      } catch (err) {
+        console.warn("Invalid session cookie in listings API:", err);
+      }
+    }
 
     const listingId = await createListing(db, body);
 

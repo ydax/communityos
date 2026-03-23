@@ -154,6 +154,16 @@ export async function middleware(request) {
         pathname,
       });
 
+      // Protect /dashboard routes
+      if (pathname.startsWith("/dashboard")) {
+        const session = request.cookies.get("session")?.value;
+        if (!session) {
+          log("warn", "Unauthenticated attempt to access dashboard", { pathname });
+          const loginUrl = new URL("/login", request.url);
+          return NextResponse.redirect(loginUrl);
+        }
+      }
+
       const response = NextResponse.next();
 
       // Add debug headers in development

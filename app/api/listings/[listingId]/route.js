@@ -6,6 +6,8 @@ import {
   updateListing,
   deleteListing,
 } from "@/lib/dbServices/listingsService";
+import { adminAuth } from "@/lib/firebase/admin";
+import { cookies } from "next/headers";
 
 // Initialize Firebase Admin
 if (!getApps().length) {
@@ -58,6 +60,21 @@ export async function PATCH(request, { params }) {
     const { listingId } = params;
     const body = await request.json();
     const db = getFirestore();
+    
+    // Auth verification
+    const cookieStore = await cookies();
+    const sessionCookie = cookieStore.get("session")?.value;
+    if (sessionCookie) {
+      try {
+        const decoded = await adminAuth.verifySessionCookie(sessionCookie, true);
+        const existing = await getListingById(db, listingId);
+        if (existing && existing.ownerId !== decoded.uid) {
+           return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 403 });
+        }
+      } catch (err) {
+        return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+      }
+    }
 
     await updateListing(db, listingId, body);
 
@@ -82,6 +99,21 @@ export async function DELETE(request, { params }) {
   try {
     const { listingId } = params;
     const db = getFirestore();
+    
+    // Auth verification
+    const cookieStore = await cookies();
+    const sessionCookie = cookieStore.get("session")?.value;
+    if (sessionCookie) {
+      try {
+        const decoded = await adminAuth.verifySessionCookie(sessionCookie, true);
+        const existing = await getListingById(db, listingId);
+        if (existing && existing.ownerId !== decoded.uid) {
+           return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 403 });
+        }
+      } catch (err) {
+        return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+      }
+    }
 
     await deleteListing(db, listingId);
 

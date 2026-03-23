@@ -127,6 +127,7 @@ graph TD
 
 **Inventory Schema:** [`02-listings.md`](02-listings.md)  
 **Acquisition Schema:** [`03-acquisition.md`](03-acquisition.md)  
+**Owner Dashboard:** [`04-owner-dashboard.md`](04-owner-dashboard.md)  
 **Collections:**
 
 - `sites/{siteId}` - Multi-tenant site configurations
