@@ -48,3 +48,7 @@ firebase-debug.*.log
 # TypeScript (if accidentally added)
 *.tsbuildinfo
 next-env.d.ts
+
+# Vercel env files
+.env.vercel.prod
+.env.*.prod
