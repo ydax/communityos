@@ -37,5 +37,28 @@ service cloud.firestore {
       allow read: if isOwner();
       allow write: if false; // Only Cloud Functions write here
     }
+
+    // ─── New collections for Progressive Shadow Identity + Cart ────
+
+    match /users/{userId} {
+      // Users can only read and update their own profile
+      allow read: if request.auth != null && request.auth.uid == resource.data.firebaseUid;
+      allow update: if request.auth != null && request.auth.uid == resource.data.firebaseUid;
+      // Creation is server-side only (shadow user creation via admin SDK)
+      allow create: if false;
+      allow delete: if false;
+    }
+
+    match /users/{userId}/cart/{cartItemId} {
+      // Cart items — authenticated user can CRUD their own cart
+      allow read, write: if request.auth != null
+        && exists(/databases/$(database)/documents/users/$(userId))
+        && get(/databases/$(database)/documents/users/$(userId)).data.firebaseUid == request.auth.uid;
+    }
+
+    match /otpCodes/{email} {
+      // OTP codes are server-side only (admin SDK reads/writes)
+      allow read, write: if false;
+    }
   }
 }

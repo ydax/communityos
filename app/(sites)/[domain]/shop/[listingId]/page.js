@@ -15,12 +15,12 @@ import Image from 'next/image';
 export default async function TenantListingPage({ params }) {
   // Await the entire params object before destructuring per Next.js 15+ best practices
   const resolvedParams = await params;
-  const { siteId, listingId } = resolvedParams;
+  const { domain, listingId } = resolvedParams;
 
   const listing = await getListingById(listingId);
 
   // If the listing doesn't exist or doesn't belong to this tenant, return 404
-  if (!listing || listing.tenantId !== siteId) {
+  if (!listing || listing.tenantId !== domain) {
     notFound();
   }
 
@@ -38,7 +38,7 @@ export default async function TenantListingPage({ params }) {
       <header className="bg-white border-b border-gray-200 py-4 px-6">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
           <h1 className="text-xl font-bold text-gray-800">
-            {siteId} Storefront
+            {domain} Storefront
           </h1>
         </div>
       </header>

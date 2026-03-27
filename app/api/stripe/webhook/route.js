@@ -32,6 +32,7 @@ export async function POST(request) {
         await handleAccountUpdated(account);
         break;
       case "checkout.session.completed":
+        // Legacy flow — Stripe Hosted Checkout (backward compat)
         const session = event.data.object;
         if (session.metadata?.type === "domain_purchase") {
           await handleDomainPurchase(session);
@@ -39,7 +40,11 @@ export async function POST(request) {
           await handleCheckoutCompleted(session);
         }
         break;
-      // Handle other events as needed
+      case "payment_intent.succeeded":
+        // New flow — Native Payment Element
+        const paymentIntent = event.data.object;
+        await handlePaymentIntentSucceeded(paymentIntent);
+        break;
       default:
         console.log(`Unhandled event type ${event.type}`);
     }
@@ -111,6 +116,8 @@ async function updateSiteStatus(siteDoc, account) {
 import { updateOrderStatus, linkPaymentIntent, getOrderById } from "@/lib/dbServices/ordersService";
 import { FieldValue } from "firebase-admin/firestore";
 import { checkDomainAvailability, purchaseDomain, setVercelNameservers } from "@/lib/apiServices/porkbunService";
+import { createShadowUser, findUserByEmail } from "@/lib/dbServices/usersService";
+import { clearCart } from "@/lib/dbServices/cartService";
 
 async function handleDomainPurchase(session) {
   const { siteId, domain } = session.metadata || {};
@@ -220,5 +227,116 @@ async function handleCheckoutCompleted(session) {
     console.log(`Successfully completed order ${orderId} via Stripe checkout`);
   } catch (error) {
     console.error(`Failed to process checkout completion for order ${orderId}:`, error);
+  }
+}
+
+/**
+ * Handle payment_intent.succeeded — the new native checkout flow
+ *
+ * This handler covers:
+ * 1. Order status update (pending → completed)
+ * 2. Shadow User creation for guest buyers
+ * 3. Marketplace vendor transfers (Separate Charges flow)
+ * 4. Cart clearing for authenticated users
+ * 5. Analytics increment
+ */
+async function handlePaymentIntentSucceeded(paymentIntent) {
+  const { orderId, context, vendorSplits } = paymentIntent.metadata || {};
+
+  if (!orderId) {
+    console.warn("[webhook] payment_intent.succeeded missing orderId in metadata");
+    return;
+  }
+
+  try {
+    // 1. Update order status
+    await updateOrderStatus(adminDb, orderId, "completed");
+    await linkPaymentIntent(adminDb, orderId, paymentIntent.id);
+
+    const order = await getOrderById(adminDb, orderId);
+    if (!order) {
+      console.error(`[webhook] Order ${orderId} not found after payment`);
+      return;
+    }
+
+    // 2. Shadow User provisioning for guest buyers
+    const buyerEmail = order.buyerInfo?.email;
+    if (buyerEmail) {
+      const existingUser = await findUserByEmail(adminDb, buyerEmail);
+      if (!existingUser) {
+        try {
+          let firebaseUid;
+          try {
+            const fbUser = await adminAuth.getUserByEmail(buyerEmail);
+            firebaseUid = fbUser.uid;
+          } catch {
+            const newFbUser = await adminAuth.createUser({
+              email: buyerEmail,
+              emailVerified: false,
+            });
+            firebaseUid = newFbUser.uid;
+          }
+
+          await createShadowUser(adminDb, {
+            email: buyerEmail,
+            firebaseUid,
+          });
+
+          console.log(`[webhook] Shadow user created for ${buyerEmail}`);
+        } catch (shadowErr) {
+          // Non-fatal: order succeeded even if shadow creation fails
+          console.error(`[webhook] Failed to create shadow user for ${buyerEmail}:`, shadowErr.message);
+        }
+      }
+    }
+
+    // 3. Marketplace vendor transfers
+    if (context === "marketplace" && vendorSplits) {
+      try {
+        const splits = JSON.parse(vendorSplits);
+        const transferGroup = paymentIntent.transfer_group;
+
+        for (const [vendorStripeId, amount] of Object.entries(splits)) {
+          await stripe.transfers.create({
+            amount: Math.round(amount),
+            currency: "usd",
+            destination: vendorStripeId,
+            transfer_group: transferGroup,
+            metadata: { orderId },
+          });
+
+          console.log(`[webhook] Transfer of $${(amount / 100).toFixed(2)} to ${vendorStripeId}`);
+        }
+      } catch (transferErr) {
+        console.error(`[webhook] Vendor transfer failed for order ${orderId}:`, transferErr.message);
+      }
+    }
+
+    // 4. Clear authenticated user's cart
+    if (order.buyerInfo?.userId) {
+      try {
+        await clearCart(adminDb, order.buyerInfo.userId);
+      } catch (cartErr) {
+        console.error(`[webhook] Failed to clear cart:`, cartErr.message);
+      }
+    }
+
+    // 5. Analytics increment
+    const siteId = order.siteId;
+    if (siteId && siteId !== "marketplace") {
+      const analyticsRef = adminDb.collection("analytics").doc(siteId);
+      await analyticsRef.set(
+        {
+          totalRevenue: FieldValue.increment(order.amount),
+          totalOrders: FieldValue.increment(1),
+          updatedAt: FieldValue.serverTimestamp(),
+        },
+        { merge: true }
+      );
+    }
+
+    console.log(`[webhook] Successfully processed payment_intent.succeeded for order ${orderId}`);
+  } catch (error) {
+    console.error(`[webhook] Error processing payment_intent.succeeded:`, error);
   }
 }

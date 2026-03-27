@@ -166,6 +166,9 @@ export async function middleware(request) {
 
       const response = NextResponse.next();
 
+      // Tenant context for cart scoping: main domain = marketplace
+      response.headers.set("x-tenant-id", "marketplace");
+
       // Add debug headers in development
       if (isDevelopment) {
         response.headers.set("x-debug-middleware-decision", "main_domain");
@@ -193,6 +196,7 @@ export async function middleware(request) {
         const response = NextResponse.rewrite(rewriteUrl);
         response.headers.set("x-custom-domain", subdomain);
         response.headers.set("x-domain-type", "subdomain");
+        response.headers.set("x-tenant-id", subdomain);
         response.headers.set("x-cache-hit", "true");
 
         // Add debug headers in development
@@ -223,6 +227,7 @@ export async function middleware(request) {
       const response = NextResponse.rewrite(rewriteUrl);
       response.headers.set("x-custom-domain", subdomain);
       response.headers.set("x-domain-type", "subdomain");
+      response.headers.set("x-tenant-id", subdomain);
       response.headers.set("x-cache-hit", "false");
 
       // Add debug headers in development
@@ -266,6 +271,7 @@ export async function middleware(request) {
       const response = NextResponse.rewrite(rewriteUrl);
       response.headers.set("x-custom-domain", hostname);
       response.headers.set("x-domain-type", "custom");
+      response.headers.set("x-tenant-id", cleanHostname);
       response.headers.set("x-cache-hit", "true");
 
       // Add debug headers in development
@@ -296,6 +302,7 @@ export async function middleware(request) {
     const response = NextResponse.rewrite(rewriteUrl);
     response.headers.set("x-custom-domain", hostname);
     response.headers.set("x-domain-type", "custom");
+    response.headers.set("x-tenant-id", cleanHostname);
     response.headers.set("x-cache-hit", "false");
     response.headers.set("x-request-id", requestId);
 

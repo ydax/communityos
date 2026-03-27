@@ -1,4 +1,5 @@
 import "./globals.css";
+import CartShell from "@/components/checkout/CartShell";
 
 /**
  * Root Layout for CentralTexas.com
@@ -67,7 +68,9 @@ export default function RootLayout({ children }) {
           rel="stylesheet"
         />
       </head>
-      <body className="font-sans antialiased">{children}</body>
+      <body className="font-sans antialiased">
+        <CartShell>{children}</CartShell>
+      </body>
     </html>
   );
 }
