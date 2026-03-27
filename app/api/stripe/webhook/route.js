@@ -33,7 +33,11 @@ export async function POST(request) {
         break;
       case "checkout.session.completed":
         const session = event.data.object;
-        await handleCheckoutCompleted(session);
+        if (session.metadata?.type === "domain_purchase") {
+          await handleDomainPurchase(session);
+        } else {
+          await handleCheckoutCompleted(session);
+        }
         break;
       // Handle other events as needed
       default:
@@ -106,6 +110,85 @@ async function updateSiteStatus(siteDoc, account) {
 
 import { updateOrderStatus, linkPaymentIntent, getOrderById } from "@/lib/dbServices/ordersService";
 import { FieldValue } from "firebase-admin/firestore";
+import { checkDomainAvailability, purchaseDomain, setVercelNameservers } from "@/lib/apiServices/porkbunService";
+
+async function handleDomainPurchase(session) {
+  const { siteId, domain } = session.metadata || {};
+  if (!siteId || !domain) {
+    console.error("Missing siteId or domain in domain_purchase session metadata");
+    return;
+  }
+
+  try {
+    // 1. Re-check availability and get exact cost
+    const availability = await checkDomainAvailability(domain);
+    if (!availability.available) {
+      throw new Error(`Domain ${domain} is no longer available.`);
+    }
+
+    // 2. Buy domain from Porkbun
+    const purchase = await purchaseDomain(domain, availability.price);
+    console.log(`Successfully purchased ${domain}. Porkbun Order: ${purchase.orderId}`);
+
+    // 3. Set Vercel DNS
+    try {
+      await setVercelNameservers(domain);
+    } catch (nsErr) {
+      console.error(`[purchase] NS update failed for ${domain}:`, nsErr.message);
+    }
+
+    // 4. Add domain to Vercel project via Vercel REST API
+    const { VERCEL_API_TOKEN, VERCEL_PROJECT_ID } = process.env;
+    if (VERCEL_API_TOKEN && VERCEL_PROJECT_ID) {
+      try {
+        await fetch(
+          `https://api.vercel.com/v10/projects/${VERCEL_PROJECT_ID}/domains`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${VERCEL_API_TOKEN}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ name: domain }),
+          },
+        );
+      } catch (err) {
+        console.error(`[purchase] Vercel domain add failed for ${domain}:`, err.message);
+      }
+    }
+
+    // 5. Update Firestore site document
+    await adminDb.collection("sites").doc(siteId).update({
+      customDomain: domain,
+      customDomainStatus: "pending_dns",
+      customDomainAddedAt: new Date(),
+      customDomainSource: "purchased_via_stripe",
+      updatedAt: new Date(),
+    });
+
+  } catch (err) {
+    console.error(`Failed to provision domain ${domain}. Issuing refund.`, err.message);
+
+    // Issue refund
+    if (session.payment_intent) {
+      try {
+        await stripe.refunds.create({
+          payment_intent: session.payment_intent,
+        });
+        console.log(`Refunded payment intent ${session.payment_intent}`);
+      } catch (refundErr) {
+        console.error("Failed to issue refund:", refundErr.message);
+      }
+    }
+
+    // Mark as failed in Firestore
+    await adminDb.collection("sites").doc(siteId).update({
+      customDomainStatus: "failed_refunded",
+      customDomainLastError: err.message,
+      updatedAt: new Date(),
+    });
+  }
+}
 
 async function handleCheckoutCompleted(session) {
   const orderId = session.metadata?.orderId || session.client_reference_id;

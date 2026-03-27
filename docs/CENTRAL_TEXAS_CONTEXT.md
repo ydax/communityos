@@ -106,6 +106,7 @@ graph TD
 ### 2. Technical Architecture
 
 **Tech Stack:** [`01-technical.md`](01-technical.md)  
+**Domain Provisioning:** [`05-domain-provisioning.md`](05-domain-provisioning.md)
 **Architecture:**
 
 - Frontend: Next.js App Router (Vercel Platforms Starter Kit pattern)
@@ -219,6 +220,7 @@ graph TD
 - ✅ **Mobile Onboarding Wizard** - Replaced forms with a 5-step "Review & Approve" wizard: Basics → Story Input (Speech-to-text) → Vibe Selection → 3-Site Preview Carousel → Publish.
 - ✅ **Marketplace Hook** - Camera-first first-listing submission to immediately link the site to the CentralTexas marketplace.
 - ✅ **Domain Hookup** - Custom domain setup UI with automated DNS CNAME verification via Cloudflare DNS over HTTPS.
+- ✅ **Domain Provisioning Pipeline** - Asynchronous Stripe Webhook + Porkbun auto-replenishment architecture for non-blocking custom domain buys. See [`05-domain-provisioning.md`](05-domain-provisioning.md) for full architecture and required environment variables (`STRIPE_SECRET_KEY`, `PORKBUN_API_KEY`, etc).
 
 **Next Milestone:** Phase 6 — CivicOS Foundation (Franchisability & Open Source Infrastructure)
 
