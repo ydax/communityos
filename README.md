@@ -166,3 +166,4 @@ In the meantime, if you're interested in deploying a CommunityOS node for your o
 
 [MIT](./LICENSE)
 
+<!-- Trigger redeploy for rotated credentials -->
