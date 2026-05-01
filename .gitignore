@@ -52,3 +52,8 @@ next-env.d.ts
 # Vercel env files
 .env.vercel.prod
 .env.*.prod
+
+# PRaC Kit
+scripts/.reviewer-state.json
+.jules-issue-body.tmp.md
+.orchestrator-pr-body.tmp.md
