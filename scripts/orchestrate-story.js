@@ -523,6 +523,10 @@ async function v3() {
 
   // ── Step 3: Write the updated Blueprint ────────────────────────────────
   console.log(`\n💾 Writing updated BLUEPRINT.md...`);
+  const blueprintDir = path.dirname(files.blueprintPath);
+  if (!fs.existsSync(blueprintDir)) {
+    fs.mkdirSync(blueprintDir, { recursive: true });
+  }
   fs.writeFileSync(files.blueprintPath, result.updated_blueprint, 'utf-8');
   console.log(`   ✅ Blueprint updated.`);
 
