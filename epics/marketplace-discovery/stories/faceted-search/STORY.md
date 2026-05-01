@@ -96,3 +96,4 @@ Feature: Faceted Search
 - Filters: `components/listings/ListingFilters.js`
 - Search API: `app/api/marketplace/search/route.js`
 - Page: `app/marketplace/page.js`
+

@@ -90,3 +90,4 @@ Feature: SEO Category Landing Pages
 
 - Routes: `app/events/[city]/page.js`, `app/services/[city]/page.js`, `app/products/[city]/page.js` (all new)
 - Search API: `app/api/marketplace/search/route.js` (server-side query)
+

@@ -93,3 +93,4 @@ Feature: Free Event RSVP
 - API route: `app/api/rsvp/route.js` (new)
 - Listing detail: `app/marketplace/[listingId]/page.js`
 - Inquiries DB: `lib/dbServices/inquiriesService.js`
+

@@ -97,3 +97,4 @@ Feature: Request a Quote Form
 - API route: `app/api/inquiries/route.js` (new)
 - DB service: `lib/dbServices/inquiriesService.js` (new)
 - Listing detail: `app/marketplace/[listingId]/page.js`
+

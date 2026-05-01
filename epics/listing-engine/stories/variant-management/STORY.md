@@ -91,3 +91,4 @@ Feature: Variant Management
 
 - Variant UI: `components/listings/VariantForm.js`, `VariantEditor.js`, `VariantTable.js`
 - Schema: `lib/validations/listingSchema.js` (variant sub-schema)
+

@@ -103,3 +103,4 @@ Feature: Single-Item Checkout
 - Confirmation page: `app/marketplace/checkout/page.js`
 - Stripe SDK: `lib/stripe/client.js`
 - Checkout UI: `components/checkout/CheckoutForm.js`
+

@@ -90,3 +90,4 @@ Feature: Storefront Theme Selection
 - Site renderer: `components/sites/SiteRenderer.js`
 - Themes: `components/sites/themes/TheMaker.js`, `TheTrade.js`, `TheVenue.js`
 - Sites DB: `lib/dbServices/sitesService.js`
+

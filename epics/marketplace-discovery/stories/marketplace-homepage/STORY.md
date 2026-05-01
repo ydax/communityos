@@ -97,3 +97,4 @@ Feature: Marketplace Homepage
 - Page: `app/marketplace/page.js`
 - Search API: `app/api/marketplace/search/route.js` (new)
 - Card: `components/listings/ListingCard.js`
+

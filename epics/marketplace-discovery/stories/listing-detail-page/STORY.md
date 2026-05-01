@@ -105,3 +105,4 @@ Feature: Listing Detail Page
 - Page: `app/marketplace/[listingId]/page.js`
 - Listings DB: `lib/dbServices/listingsService.js` (`getListingById`)
 - Sites DB: `lib/dbServices/sitesService.js` (merchant info)
+

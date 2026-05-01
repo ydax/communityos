@@ -98,3 +98,4 @@ Feature: Role-Based Authentication
 - Middleware: `middleware.js` (route gating logic)
 - Users DB: `lib/dbServices/usersService.js`
 - Login UI: `app/login/page.js`
+

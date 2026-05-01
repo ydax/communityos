@@ -95,3 +95,4 @@ Feature: Search Index Sync
 - Cloud Function: `functions/index.js` (add `onListingWritten` trigger)
 - Sites DB: `lib/dbServices/sitesService.js` (lookup for denormalization)
 - Typesense client: new dependency `typesense` (npm package)
+
