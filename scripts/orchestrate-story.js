@@ -353,10 +353,10 @@ function createBranchAndPR(blueprintRelPath, storySlug, classification, summary,
   console.log(`\n📝 Creating branch: ${branchName}`);
 
   try {
-    execSync('git checkout main', { encoding: 'utf-8', stdio: 'pipe' });
-    execSync('git pull origin main', { encoding: 'utf-8', stdio: 'pipe' });
+    execSync('git checkout v3', { encoding: 'utf-8', stdio: 'pipe' });
+    execSync('git pull origin v3', { encoding: 'utf-8', stdio: 'pipe' });
   } catch (err) {
-    console.warn(`   ⚠️ Could not pull main: ${err.message}`);
+    console.warn(`   ⚠️ Could not pull v3: ${err.message}`);
   }
 
   try {
@@ -441,7 +441,7 @@ ${(getStitchConfig().enabled && classification !== 'behavioral') ? '- [ ] Stitch
 
 // ── Main ─────────────────────────────────────────────────────────────────────
 
-async function main() {
+async function v3() {
   const args = process.argv.slice(2);
   const isRemoval = args.includes('--remove');
 
@@ -535,9 +535,9 @@ async function main() {
     { isRemoval }
   );
 
-  // ── Step 5: Switch back to main ────────────────────────────────────────
+  // ── Step 5: Switch back to v3 ────────────────────────────────────────
   try {
-    execSync('git checkout main', { encoding: 'utf-8', stdio: 'pipe' });
+    execSync('git checkout v3', { encoding: 'utf-8', stdio: 'pipe' });
   } catch (_) { /* non-fatal */ }
 
   const verb = isRemoval ? 'REMOVAL' : 'ADDITION';
@@ -549,7 +549,7 @@ async function main() {
   console.log(`${'═'.repeat(60)}\n`);
 }
 
-main().catch(err => {
+v3().catch(err => {
   console.error('Unexpected error:', err);
   process.exit(1);
 });

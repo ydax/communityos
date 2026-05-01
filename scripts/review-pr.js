@@ -215,7 +215,7 @@ function getFlag(args, flag) {
 
 // ── Main ─────────────────────────────────────────────────────────────────────
 
-async function main() {
+async function v3() {
   const args = process.argv.slice(2);
   const autoPoll = args.includes('--auto-poll');
   const dryRun = args.includes('--dry-run');
@@ -311,4 +311,4 @@ async function main() {
   }
 }
 
-main().catch(err => { console.error('Unexpected error:', err); process.exit(1); });
+v3().catch(err => { console.error('Unexpected error:', err); process.exit(1); });

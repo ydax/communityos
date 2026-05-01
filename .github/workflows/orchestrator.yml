@@ -2,7 +2,7 @@
 #
 # PRaC Orchestrator Pipeline — Story → Blueprint
 #
-# Trigger: Push to main adds/modifies/deletes a STORY.md in epics/
+# Trigger: Push to v3 adds/modifies/deletes a STORY.md in epics/
 # Action:  Runs orchestrate-story.js to generate Blueprint PRs
 #
 # Install via: npx @ydax/prac-kit init
@@ -11,7 +11,7 @@ name: Orchestrator — Story to Blueprint
 
 on:
   push:
-    branches: [main]
+    branches: [v3]
     paths:
       - 'epics/**/stories/**/STORY.md'
 
@@ -76,8 +76,8 @@ jobs:
             if [ -n "$story_path" ]; then
               echo "═══ 🎯 Processing: $story_path ═══"
               node scripts/orchestrate-story.js "$story_path"
-              git checkout main 2>/dev/null || true
-              git pull origin main 2>/dev/null || true
+              git checkout v3 2>/dev/null || true
+              git pull origin v3 2>/dev/null || true
             fi
           done
 
@@ -92,7 +92,7 @@ jobs:
             if [ -n "$story_path" ]; then
               echo "═══ 🗑️ REMOVING: $story_path ═══"
               node scripts/orchestrate-story.js --remove --base-commit "$BASE_COMMIT" "$story_path"
-              git checkout main 2>/dev/null || true
-              git pull origin main 2>/dev/null || true
+              git checkout v3 2>/dev/null || true
+              git pull origin v3 2>/dev/null || true
             fi
           done
