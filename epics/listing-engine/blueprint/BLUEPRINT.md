@@ -1,6 +1,6 @@
 # BLUEPRINT: Universal Listing Engine
 
-**Last Updated:** 2024-05-27
+**Last Updated:** 2024-05-28
 
 ## 1. Epic Context
 The Universal Listing Engine provides a single unified form and polymorphic document model for merchants to create and manage listings of any type (Product, Event, Service, Food, Community). All listings share a common base schema for marketplace search, with type-specific extension fields stored in a polymorphic `details` JSON payload.
@@ -213,6 +213,41 @@ Feature: Unified Listing Creation Form
     Then basePrice is stored as 2550 (integer cents)
 ```
 
+### Feature: Variant Management
+
+```gherkin
+Feature: Variant Management
+
+  Scenario: Merchant adds variants to a product
+    Given a merchant editing a product listing
+    When they click "Add Variant"
+    Then a new variant row appears with fields: Name, Price Adjustment, Stock
+    And they enter: Name "Large", Price Adjustment "+$5.00", Stock "20"
+    And saving the listing includes the variant in the variants array
+
+  Scenario: Variant price is calculated correctly
+    Given a listing with basePrice 2500 (i.e., $25.00)
+    And a variant with priceDelta 500
+    Then the displayed variant price is "$30.00"
+
+  Scenario: Variant with unlimited inventory
+    Given a merchant adding a variant for a digital product
+    When they leave the Stock field empty
+    Then inventoryCount is saved as null (unlimited)
+
+  Scenario: Merchant removes a variant
+    Given a listing with 3 variants
+    When the merchant clicks the delete icon on variant 2
+    Then variant 2 is removed from the array
+    And the remaining variants are re-indexed
+
+  Scenario: Maximum 10 variants enforced
+    Given a listing with 10 variants
+    When the merchant clicks "Add Variant"
+    Then the button is disabled
+    And a message reads "Maximum 10 variants per listing"
+```
+
 ## 5. Component Specifications
 
 | Component | Track | Description | Design System & Tailwind Classes |
@@ -223,3 +258,6 @@ Feature: Unified Listing Creation Form
 | `UnifiedListingForm` | Visual & Behavioral | Replaces GoodForm/ServiceForm. A dynamic form using `react-hook-form` that renders base fields and conditional type-specific fields based on the selected listing type. Handles price conversion to cents and inline validation. | **Form Container:** `max-w-5xl mx-auto p-6 lg:p-10 space-y-8`<br><br>**Section Header:** `font-outfit text-2xl font-semibold text-slate-900 leading-snug mb-4`<br><br>**Input Label:** `block text-sm font-medium text-slate-700 mb-1.5`<br><br>**Text Input Base:** `block w-full rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 shadow-sm transition-all duration-200 focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-500/20`<br><br>**Error State:** Append `border-rose-500 focus:border-rose-500 focus:ring-rose-500/20 text-rose-900`<br><br>**Submit Button:** `inline-flex items-center justify-center rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition-all duration-200 ease-out hover:bg-indigo-700 hover:-translate-y-[1px] hover:shadow-md active:scale-[0.98]` |
 | `TypeSelector` | Visual & Behavioral | 5 large pill buttons with emojis at the top of the form to select the listing type. | **Grid Container:** `grid grid-cols-2 md:grid-cols-5 gap-4 mb-8`<br><br>**Button (Active):** `flex flex-col items-center justify-center gap-2 rounded-xl bg-indigo-50 border-2 border-indigo-600 p-4 text-indigo-700 transition-all duration-200 active:scale-[0.98]`<br><br>**Button (Inactive):** `flex flex-col items-center justify-center gap-2 rounded-xl bg-white border border-slate-200 p-4 text-slate-600 hover:bg-slate-50 hover:border-slate-300 transition-all duration-200 active:scale-[0.98]`<br><br>**Emoji:** `text-2xl`<br><br>**Label:** `font-inter text-sm font-semibold` |
 | `MediaDropzone` | Visual & Behavioral | Drag-and-drop area for image uploads. Previews thumbnails inline and handles Firebase Storage upload. | **Dropzone Container:** `flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 p-12 text-center transition-all duration-200 hover:bg-slate-100 hover:border-indigo-300 cursor-pointer`<br><br>**Thumbnail Grid:** `grid grid-cols-2 md:grid-cols-4 gap-4 mt-4`<br><br>**Thumbnail Image:** `w-full h-24 object-cover rounded-lg border border-slate-200 shadow-sm` |
+| `VariantEditor` | Visual & Behavioral | Container component that manages the state of the variants array. Renders the `VariantTable` and `VariantForm`. Enforces the maximum 10 variants rule. | **Container:** `space-y-6`<br><br>**Header:** `font-inter text-xl font-semibold text-slate-900 leading-normal`<br><br>**Error/Limit Message:** `font-inter text-sm font-medium text-rose-600 mt-2` |
+| `VariantTable` | Visual & Behavioral | Displays existing variants in a compact table layout. Stacks vertically on mobile. Includes a right-aligned subtle trash icon for deletion. | **Table Container:** `w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm`<br><br>**Table:** `w-full text-left border-collapse`<br><br>**Header Row:** `border-b border-slate-200 bg-slate-50`<br><br>**Header Cell:** `px-4 py-3 font-inter text-xs font-semibold tracking-wider text-slate-500 uppercase`<br><br>**Body Row:** `flex flex-col border-b border-slate-100 transition-colors hover:bg-slate-50 md:table-row last:border-none`<br><br>**Body Cell:** `px-4 py-3 font-inter text-sm text-slate-700`<br><br>**Price Display:** `font-medium text-slate-900`<br><br>**Delete Button:** `text-slate-400 transition-colors hover:text-rose-500 p-1.5 rounded-md hover:bg-rose-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500` |
+| `VariantForm` | Visual & Behavioral | Inline form to add a new variant. Includes fields for Name, Price Adjustment, and Stock. Price adjustment input includes a "+$" prefix. | **Form Container:** `flex flex-col gap-4 rounded-xl border border-slate-200 bg-slate-50 p-4 md:flex-row md:items-end`<br><br>**Input Group:** `flex-1`<br><br>**Label:** `block text-sm font-medium text-slate-700 mb-1.5`<br><br>**Input Base:** `block w-full rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 shadow-sm transition-all duration-200 focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-500/20`<br><br>**Price Input Wrapper:** `relative flex items-center`<br><br>**Price Prefix:** `absolute left-3 font-inter text-sm text-slate-500`<br><br>**Price Input:** Append `pl-8` to Input Base.<br><br>**Add Button:** `inline-flex items-center justify-center rounded-lg bg-white px-5 py-2.5 text-sm font-medium text-slate-700 border border-slate-200 shadow-sm transition-all duration-200 ease-out hover:bg-slate-50 hover:border-slate-300 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50` |
