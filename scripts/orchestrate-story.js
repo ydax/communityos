@@ -420,7 +420,7 @@ ${(getStitchConfig().enabled && classification !== 'behavioral') ? '- [ ] Stitch
   try {
     fs.writeFileSync(tmpBodyFile, prBody, 'utf-8');
     const output = execSync(
-      `gh pr create --repo ${REPO} --title "${prTitle}" --body-file ${tmpBodyFile} --label "${labels}"`,
+      `gh pr create --repo ${REPO} --title "${prTitle}" --body-file ${tmpBodyFile} --label "${labels}" --base v3`,
       { encoding: 'utf-8' }
     );
     const prUrl = output.trim();
