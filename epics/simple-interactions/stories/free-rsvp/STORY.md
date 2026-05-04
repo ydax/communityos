@@ -94,3 +94,4 @@ Feature: Free Event RSVP
 - Listing detail: `app/marketplace/[listingId]/page.js`
 - Inquiries DB: `lib/dbServices/inquiriesService.js`
 
+ 

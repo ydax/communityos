@@ -98,3 +98,4 @@ Feature: Request a Quote Form
 - DB service: `lib/dbServices/inquiriesService.js` (new)
 - Listing detail: `app/marketplace/[listingId]/page.js`
 
+ 

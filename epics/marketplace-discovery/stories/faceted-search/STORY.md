@@ -97,3 +97,4 @@ Feature: Faceted Search
 - Search API: `app/api/marketplace/search/route.js`
 - Page: `app/marketplace/page.js`
 
+ 

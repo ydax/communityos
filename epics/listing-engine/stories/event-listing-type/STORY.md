@@ -93,3 +93,4 @@ Feature: Event Listing Type
 - Schema: `lib/validations/listingSchema.js` (EVENT details discriminant)
 - Card: `components/listings/ListingCard.js`
 
+ 

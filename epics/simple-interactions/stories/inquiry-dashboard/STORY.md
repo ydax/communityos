@@ -96,3 +96,4 @@ Feature: Merchant Inquiry Dashboard
 - DB service: `lib/dbServices/inquiriesService.js`
 - Sidebar: `components/dashboard/Sidebar.js` (add badge count)
 
+ 

@@ -80,3 +80,4 @@ Feature: Storefront SEO & OpenGraph
 - Route: `app/m/[slug]/page.js` (`generateMetadata` export)
 - Root layout: `app/layout.js` (default meta tags)
 
+ 
