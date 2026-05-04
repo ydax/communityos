@@ -1,0 +1,72 @@
+# BLUEPRINT: Auto-Generated Merchant Storefronts
+
+## Last Updated
+2026-05-01
+
+## 1. Entities
+
+| Entity | Fields | Description |
+|---|---|---|
+| `Site` | `id`, `slug`, `theme`, `name`, `bio`, `logoUrl`, `hours`, `location` | The merchant's storefront configuration and profile data. |
+| `Listing` | `id`, `siteId`, `type` (enum: product, event, service), `title`, `description`, `imageUrl`, `price`, `eventDate`, `billingModel`, `isActive` | An individual offering displayed on the storefront. |
+
+## 2. State Machines
+
+### `StorefrontTabMachine`
+Manages the state of the listing tabs on the storefront.
+
+| State | Event | Next State | Actions/Guards |
+|---|---|---|---|
+| `INITIALIZING` | `EVALUATE_LISTINGS` | `SINGLE_TYPE` | Guard: Only one listing type exists. Action: Hide tab bar. |
+| `INITIALIZING` | `EVALUATE_LISTINGS` | `MULTI_TYPE` | Guard: Multiple listing types exist. Action: Set default active tab to first available type. |
+| `MULTI_TYPE` | `SELECT_TAB` | `MULTI_TYPE` | Action: Update `activeTab` state, trigger animated grid transition (fade or slide). |
+
+## 3. Gherkin Scenarios
+
+```gherkin
+Feature: Tabbed Listing Display
+
+  Scenario: Listings are grouped by type
+    Given a merchant with 3 products, 2 events, and 1 service
+    When a consumer visits their storefront
+    Then a tab bar shows "Products" (3), "Events" (2), "Services" (1)
+    And "Products" is the default selected tab
+    And the grid shows only product listings
+
+  Scenario: Switching tabs filters listings
+    Given a consumer on a storefront with multiple listing types
+    When they click the "Events" tab
+    Then the listing grid updates to show only event listings
+    And the tab transition is animated (fade or slide)
+
+  Scenario: Single type hides tab bar
+    Given a merchant who only has event listings
+    When a consumer visits their storefront
+    Then the tab bar is not rendered
+    And all event listings display directly in the grid
+
+  Scenario: Empty type is excluded from tabs
+    Given a merchant with products and services but no events
+    When a consumer visits their storefront
+    Then only "Products" and "Services" tabs appear
+    And there is no "Events" tab
+
+  Scenario: Listing cards adapt to type
+    Given an event listing in the grid
+    Then the card displays the event date and time prominently
+    And a product card displays the price
+    And a service card displays the billing model (e.g., "From $75/hr")
+```
+
+## 4. Component Specifications
+
+| Component | Type | Routing/State | Visual/Design System Rules |
+|---|---|---|---|
+| `StorefrontPage` (`app/m/[slug]/page.js`) | Server | Dynamic route `/m/[slug]`. Fetches `Site` and `Listing`s from Firestore. Uses ISR (`revalidate: 60`). Generates OpenGraph metadata. | N/A (Data fetching and SEO wrapper) |
+| `SiteRenderer` (`components/sites/SiteRenderer.js`) | Client | Manages `activeTab` state. Groups listings by `type`. Dispatches to `TheMaker`, `TheTrade`, or `TheVenue` based on `site.theme`. | Renders tab bar between profile header and grid. Tab bar uses horizontal scrollable pill bar on mobile, standard on desktop. Active tab: `bg-indigo-50 text-indigo-700 font-medium rounded-full`. Inactive: `text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-medium rounded-full`. Includes listing count badge. Grid: `grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6`. |
+| `ListingCard` (`components/listings/ListingCard.js`) | Client | Receives `listing` prop. | Uses Interactive Marketplace Card: `group relative bg-white rounded-2xl border border-slate-200 p-6 shadow-sm overflow-hidden transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-[0_12px_24px_-8px_rgba(15,23,42,0.08)] hover:border-indigo-300 cursor-pointer`. Adapts content: prominent date/time for events, price for products, billing model for services. |
+| `TheMaker` (`components/sites/themes/TheMaker.js`) | Client | Receives `site` and `filteredListings`. | Earthy, organic vibe. Primary actions use `amber-500`. Max border radiuses (`rounded-full` buttons, `rounded-[2rem]` images). Background `#FAF9F6`. Asymmetrical CSS grids for galleries. |
+| `TheTrade` (`components/sites/themes/TheTrade.js`) | Client | Receives `site` and `filteredListings`. | Ironclad trust vibe. Heavy `indigo-600` and `slate-900`. Tight radiuses (`rounded-md` or `rounded-lg`). Highly structured list-views. |
+| `TheVenue` (`components/sites/themes/TheVenue.js`) | Client | Receives `site` and `filteredListings`. | Immersive, moody vibe. Dark mode (`bg-slate-900`, `text-white`). Full-bleed layouts (`w-full`). Glassmorphism base (`bg-black/40 backdrop-blur-lg border-white/10`). Sharp corners (`rounded-none`). |
+| `sitesService` (`lib/dbServices/sitesService.js`) | Service | N/A | Firestore queries for `Site` entity by `slug`. |
+| `listingsService` (`lib/dbServices/listingsService.js`) | Service | N/A | Firestore queries for `Listing` entities by `siteId`. |
