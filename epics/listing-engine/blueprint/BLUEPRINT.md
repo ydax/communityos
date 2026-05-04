@@ -1,6 +1,6 @@
 # BLUEPRINT: Universal Listing Engine
 
-**Last Updated:** 2024-05-24
+**Last Updated:** 2024-05-26
 
 ## 1. Epic Context
 The Universal Listing Engine provides a single unified form and polymorphic document model for merchants to create and manage listings of any type (Product, Event, Service, Food, Community). All listings share a common base schema for marketplace search, with type-specific extension fields stored in a polymorphic `details` JSON payload.
@@ -9,9 +9,13 @@ The Universal Listing Engine provides a single unified form and polymorphic docu
 
 | Entity | Type | Description | Fields |
 |---|---|---|---|
-| `Listing` | Document | Base polymorphic listing schema | `id`, `type` (Enum), `status` (Enum: active, draft, archived), `title`, `description`, `basePrice` (Int, cents), `images` (Array), `tags` (Array), `location`, `details` (JSON), `variants` (Array) |
-| `EventDetails` | JSON Object | Event-specific details payload stored within `Listing.details` | `startTime` (DateTime), `endTime` (DateTime), `venue` (String), `isTicketed` (Boolean) |
-| `Variant` | Object | Flat array item for ticket tiers, sizes, etc. | `name` (String), `priceDelta` (Int, cents), `inventoryCount` (Int) |
+| `Listing` | Document | Base polymorphic listing schema | `id`, `type` (Enum: PRODUCT, EVENT, SERVICE, FOOD, COMMUNITY), `status` (Enum: active, draft, archived), `title`, `description`, `basePrice` (Int, cents), `images` (Array), `tags` (Array), `location`, `details` (JSON), `variants` (Array) |
+| `ProductDetails` | JSON Object | Product-specific details payload stored within `Listing.details` | `fulfillment` (Array), `condition` (String) |
+| `EventDetails` | JSON Object | Event-specific details payload stored within `Listing.details` | `startTime` (DateTime), `endTime` (DateTime), `venueName` (String), `isTicketed` (Boolean) |
+| `ServiceDetails` | JSON Object | Service-specific details payload stored within `Listing.details` | `estimatedDurationMins` (Int), `requiresQuote` (Boolean), `serviceArea` (String) |
+| `FoodDetails` | JSON Object | Food-specific details payload stored within `Listing.details` | `dietaryTags` (Array), `isPreOrder` (Boolean) |
+| `CommunityDetails` | JSON Object | Community-specific details payload stored within `Listing.details` | `isFree` (Boolean), `rsvpEnabled` (Boolean) |
+| `Variant` | Object | Flat array item for ticket tiers, sizes, etc. | `id` (String), `name` (String), `priceDelta` (Int, cents), `inventoryCount` (Int) |
 
 ## 3. State Machines
 *(No complex UI state machines defined yet. Component-level derived state handles Event past/upcoming status.)*
@@ -22,6 +26,60 @@ The Universal Listing Engine provides a single unified form and polymorphic docu
 - **Archived:** Listing is hidden from the marketplace and active dashboard views (triggered via dashboard quick action).
 
 ## 4. Gherkin Scenarios
+
+### Feature: Polymorphic Listing Schema
+
+```gherkin
+Feature: Polymorphic Listing Schema
+
+  Scenario: Product listing validates correctly
+    Given a listing payload with type "PRODUCT"
+    And base fields: title, description, basePrice, images, tags
+    And details: { fulfillment: ["PICKUP"], condition: "new" }
+    When the schema validates the payload
+    Then validation succeeds
+    And the parsed output includes the details object
+
+  Scenario: Event listing validates with required date fields
+    Given a listing payload with type "EVENT"
+    And details: { startTime: "2026-06-15T18:00:00Z", endTime: "2026-06-15T22:00:00Z", venueName: "The Pearl", isTicketed: true }
+    When the schema validates the payload
+    Then validation succeeds
+
+  Scenario: Event listing rejects missing startTime
+    Given a listing payload with type "EVENT"
+    And details: { venueName: "The Pearl" }
+    When the schema validates the payload
+    Then validation fails with error on details.startTime
+
+  Scenario: Service listing validates lead-gen fields
+    Given a listing payload with type "SERVICE"
+    And details: { estimatedDurationMins: 60, requiresQuote: true, serviceArea: "San Marcos" }
+    When the schema validates the payload
+    Then validation succeeds
+
+  Scenario: Base fields are enforced across all types
+    Given a listing payload of any type missing the title field
+    When the schema validates the payload
+    Then validation fails with error on title
+
+  Scenario: Prices are validated as integer cents
+    Given a listing with basePrice: 75.50 (not an integer)
+    When the schema validates the payload
+    Then validation fails with "Price must be a whole number (in cents)"
+
+  Scenario: Tags are free-form strings
+    Given a listing with tags: ["vegan", "live-music", "family-friendly"]
+    When the schema validates the payload
+    Then validation succeeds
+    And tags are preserved as-is
+
+  Scenario: Variants array validates
+    Given a listing with variants: [{ name: "VIP", priceDelta: 2500, inventoryCount: 50 }]
+    When the schema validates the payload
+    Then validation succeeds
+    And each variant has an auto-generated id
+```
 
 ### Feature: Event Listing Type
 
