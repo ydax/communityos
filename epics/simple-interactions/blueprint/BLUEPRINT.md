@@ -1,6 +1,6 @@
 # BLUEPRINT.md
 
-*Last Updated: 2024-05-20*
+*Last Updated: 2024-05-21*
 
 ## Entities
 
@@ -41,7 +41,58 @@
 | READ_COLLAPSED | CLICK_EXPAND | READ_EXPANDED | Reveal full message details |
 | READ_EXPANDED | CLICK_COLLAPSED | READ_COLLAPSED | Hide message details |
 
+### RequestQuoteForm State Machine
+| State | Event | Next State | Actions |
+|---|---|---|---|
+| IDLE | SUBMIT_FORM (Valid) | LOADING | Trigger API call to `/api/inquiries` with form data |
+| IDLE | SUBMIT_FORM (Invalid) | IDLE | Show inline validation errors (e.g., "Email is required") |
+| LOADING | API_SUCCESS | SUCCESS | Replace form with success card ("Quote request sent!...") |
+| LOADING | API_ERROR (429) | ERROR | Show rate limit error message |
+| LOADING | API_ERROR (Other) | ERROR | Show generic error message |
+| ERROR | RETRY_SUBMIT | LOADING | Trigger API call again |
+| SUCCESS | - | - | Form is replaced by success message, non-interactive |
+
 ## Gherkin Scenarios
+
+### Request a Quote Form
+
+```gherkin
+Feature: Request a Quote Form
+
+  Scenario: Consumer submits a quote request
+    Given a consumer on a SERVICE listing detail page
+    When they fill in name "Jane Doe", email "jane@email.com", phone "512-555-1234"
+    And write a message "Need kitchen faucet replaced"
+    And click "Request Quote"
+    Then an inquiry document is created in Firestore with type "QUOTE"
+    And a notification email is sent to the merchant
+    And the consumer sees "Quote request sent! The merchant will contact you soon."
+
+  Scenario: Form validates required fields
+    Given a consumer on the quote request form
+    When they click "Request Quote" without entering an email
+    Then an inline validation error shows: "Email is required"
+    And the form does not submit
+
+  Scenario: Rate limiting prevents spam
+    Given a consumer who has submitted 5 quote requests in the last hour
+    When they attempt to submit another
+    Then the API returns a 429 error
+    And the form shows "You've reached the maximum number of requests. Please try again later."
+
+  Scenario: Merchant email includes full inquiry details
+    Given a consumer submits a quote request
+    When the notification email is sent to the merchant
+    Then the email subject is "New Quote Request: Kitchen Faucet Repair"
+    And the body includes: consumer name, email, phone, and message
+    And a "Reply" link that opens their email client
+
+  Scenario: Pre-fill form for logged-in consumers
+    Given a logged-in consumer with email "jane@email.com"
+    When they open the quote request form
+    Then the email field is pre-filled with "jane@email.com"
+    And the name field is pre-filled if displayName exists
+```
 
 ### Free Event RSVP
 
@@ -125,7 +176,8 @@ Feature: Merchant Inquiry Dashboard
 | Component | Type | Specification |
 |---|---|---|
 | `RsvpButton` | UI Component | **Visual**: Full-width prominent button. Default state uses Secondary Button style: `inline-flex items-center justify-center w-full rounded-lg bg-white px-5 py-2.5 text-sm font-medium text-slate-700 border border-slate-200 shadow-sm transition-all duration-200 ease-out hover:bg-slate-50 hover:border-slate-300 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 active:scale-[0.98]`. Success state ("You're Going! ✓"): `bg-emerald-500 text-white hover:bg-emerald-600 border-transparent`. Inline form inputs use standard text input base: `block w-full rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 shadow-sm transition-all duration-200 focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-500/20`.<br><br>**Behavioral**: On click, if logged out, expands inline form for name/email. If logged in, submits directly to `/api/rsvp`. On success, transitions to SUCCESS state and disables interaction. |
-| `ListingDetailPage` | Page | **Visual**: Displays RSVP count as small text below the button (`font-inter text-sm font-medium text-slate-600 mt-2 text-center block`).<br><br>**Behavioral**: Fetches `rsvpCount` from listing document. Checks if current user has already RSVPed to set initial state of `RsvpButton`. |
+| `RequestQuoteForm` | UI Component | **Visual**: Inline form. Labels use `block text-sm font-medium text-slate-700 mb-1.5`. Inputs use standard text input base: `block w-full rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 shadow-sm transition-all duration-200 focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-500/20`. Submit button uses Primary Button style: `inline-flex items-center justify-center rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition-all duration-200 ease-out hover:bg-indigo-700 hover:-translate-y-[1px] hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 active:scale-[0.98]`. Success state replaces form with a success card featuring a green check icon (`text-emerald-500`).<br><br>**Behavioral**: Validates required fields (email). Pre-fills name and email if user is logged in. Submits to `/api/inquiries`. Handles 429 rate limit errors. On success, transitions to SUCCESS state. |
+| `ListingDetailPage` | Page | **Visual**: Displays RSVP count as small text below the button (`font-inter text-sm font-medium text-slate-600 mt-2 text-center block`). For SERVICE listings, renders the `RequestQuoteForm` inline.<br><br>**Behavioral**: Fetches `rsvpCount` from listing document. Checks if current user has already RSVPed to set initial state of `RsvpButton`. Passes listing ID and merchant ID to `RequestQuoteForm`. |
 | `InquiryDashboardPage` | Page | **Visual**: Uses Dashboard SaaS Canvas (`bg-slate-100`). Main content area constrained with `max-w-5xl mx-auto` and `p-6 lg:p-10`. Includes a filter toggle group (All, Quotes Only, RSVPs Only) using Secondary Button styles.<br><br>**Behavioral**: Fetches inquiries from `inquiriesService` for the current merchant. Sorts chronologically (newest first). Manages local state for type filtering. |
 | `InquiryCard` | UI Component | **Visual**: Standard Card base: `bg-white rounded-2xl border border-slate-200/80 shadow-[0_2px_8px_-2px_rgba(15,23,42,0.04)] overflow-hidden p-6`. Unread state adds a left border accent: `border-l-4 border-l-indigo-600` and bold title `font-inter text-lg font-bold text-slate-900`. Read state title: `font-semibold`. Type Badges: Quote uses `bg-indigo-50 text-indigo-700`, RSVP uses `bg-amber-50 text-amber-700`. Status Badge: New uses `bg-indigo-50 text-indigo-700`, Read uses `bg-slate-100 text-slate-600`. "Mark as Read" button uses Ghost/Tertiary Button style.<br><br>**Behavioral**: Toggles expansion to show full message details for QUOTE types. "Mark as Read" click triggers API update to Firestore and updates local status state. |
 | `Sidebar` | UI Component | **Visual**: Fixed left rail `w-64 bg-slate-50 border-r border-slate-200`. Badge count for unread inquiries is a small indigo circle: `inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-indigo-600 rounded-full`.<br><br>**Behavioral**: Fetches or subscribes to the count of unread inquiries (`status === 'NEW'`) for the merchant. Updates dynamically when inquiries are marked as read. |
