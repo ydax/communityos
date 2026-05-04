@@ -1,7 +1,7 @@
 # BLUEPRINT: Auto-Generated Merchant Storefronts
 
 ## Last Updated
-2023-10-24
+2026-05-02
 
 ## 1. Entities
 
@@ -92,13 +92,38 @@ Feature: Dynamic Storefront Page
     When a search engine bot requests /m/joes-bbq
     Then the full HTML is returned in the initial response (no client-side fetch required)
     And the page uses ISR with revalidate of 60 seconds
+
+Feature: Storefront SEO & OpenGraph
+
+  Scenario: Dynamic meta tags are generated
+    Given a merchant "Joe's BBQ" with bio "Best brisket in San Marcos"
+    When a search engine indexes /m/joes-bbq
+    Then the <title> tag is "Joe's BBQ | CentralTexas.com"
+    And the meta description is "Best brisket in San Marcos"
+    And og:title is "Joe's BBQ"
+    And og:description is "Best brisket in San Marcos"
+    And og:url is "https://centraltexas.com/m/joes-bbq"
+
+  Scenario: OpenGraph image uses merchant logo
+    Given a merchant with a logoUrl set
+    When their storefront link is shared on Instagram
+    Then the link preview shows their logo as the og:image
+
+  Scenario: Fallback meta for merchants without a bio
+    Given a merchant who left the bio field empty
+    Then the meta description defaults to "{Business Name} on CentralTexas.com — your local marketplace"
+
+  Scenario: Canonical URL is set correctly
+    Given a merchant storefront at /m/river-city-scapes
+    Then the canonical URL meta tag points to https://centraltexas.com/m/river-city-scapes
 ```
 
 ## 4. Component Specifications
 
 | Component | Type | Routing/State | Visual/Design System Rules |
 |---|---|---|---|
-| `StorefrontPage` (`app/m/[slug]/page.js`) | Server | Dynamic route `/m/[slug]`. Fetches `Site` via `getSiteBySlug` and `Listing`s via `listListingsBySite`. Returns 404 if slug is invalid. Uses ISR (`revalidate: 60`). Generates OpenGraph metadata. | N/A (Data fetching and SEO wrapper) |
+| `RootLayout` (`app/layout.js`) | Server | Root layout. Defines default meta tags and OpenGraph fallback. | N/A |
+| `StorefrontPage` (`app/m/[slug]/page.js`) | Server | Dynamic route `/m/[slug]`. Fetches `Site` via `getSiteBySlug` and `Listing`s via `listListingsBySite`. Returns 404 if slug is invalid. Uses ISR (`revalidate: 60`). Generates dynamic OpenGraph metadata (`title`, `description`, `og:title`, `og:description`, `og:image`, `og:url`, canonical URL) using `generateMetadata`. Uses `logoUrl` for `og:image` with fallback. Provides fallback description if `bio` is empty. Injects JSON-LD LocalBusiness structured data. | N/A (Data fetching and SEO wrapper) |
 | `SiteRenderer` (`components/sites/SiteRenderer.js`) | Client | Manages `activeTab` state. Groups listings by `type`. Dispatches to `TheMaker`, `TheTrade`, or `TheVenue` based on `site.theme`. | Renders top section: full-width cover photo with logo overlay, business name, bio, location (city + map link), and business hours (compact badge with expandable schedule). Renders tab bar between profile header and grid. Tab bar uses horizontal scrollable pill bar on mobile, standard on desktop. Active tab: `bg-indigo-50 text-indigo-700 font-medium rounded-full`. Inactive: `text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-medium rounded-full`. Includes listing count badge. Grid: `grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6`. Shows empty state "Coming soon — check back for offerings!" if no listings. |
 | `ListingCard` (`components/listings/ListingCard.js`) | Client | Receives `listing` prop. | Uses Interactive Marketplace Card: `group relative bg-white rounded-2xl border border-slate-200 p-6 shadow-sm overflow-hidden transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-[0_12px_24px_-8px_rgba(15,23,42,0.08)] hover:border-indigo-300 cursor-pointer`. Adapts content: prominent date/time for events, price for products, billing model for services. |
 | `TheMaker` (`components/sites/themes/TheMaker.js`) | Client | Receives `site` and `filteredListings`. | Earthy, organic vibe. Primary actions use `amber-500`. Max border radiuses (`rounded-full` buttons, `rounded-[2rem]` images). Background `#FAF9F6`. Asymmetrical CSS grids for galleries. |
