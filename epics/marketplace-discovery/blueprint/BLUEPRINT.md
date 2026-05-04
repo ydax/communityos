@@ -1,7 +1,7 @@
 # BLUEPRINT: Marketplace Discovery Engine
 
 ## Last Updated
-2024-05-22
+2024-05-24
 
 ## Entities
 
@@ -10,6 +10,7 @@
 | `SearchQuery` | Represents the active filter state and search parameters in the marketplace. | `query` (String), `type` (String: Events, Products, Services, Food, Community), `city` (String[]), `priceMin` (Number), `priceMax` (Number), `dateRange` (String), `tags` (String[]) |
 | `FacetCount` | Represents the number of available listings for a specific filter value returned by the search index. | `field` (String), `value` (String), `count` (Number) |
 | `Listing` | Represents the full data model of a marketplace listing fetched from Firestore for the detail page. | `id` (String), `type` (String: Product, Event, Service, Food, Community), `title` (String), `description` (String), `images` (String[]), `price` (Number/String), `merchant` (Object: name, logo, slug), `variants` (Array), `eventDetails` (Object: date, venue, ticketTiers) |
+| `SearchDocument` | Represents the denormalized listing data stored in the external search index for fast, geo-aware queries. | `id` (String), `title` (String), `description` (String), `type` (String), `basePrice` (Number), `tags` (String[]), `images` (String[]), `merchantName` (String), `city` (String), `location` (Array: [lat, lng]) |
 
 ## State Machines
 
@@ -149,6 +150,40 @@ Feature: Listing Detail Page
     Given no listing exists with ID "nonexistent123"
     When a consumer navigates to /marketplace/nonexistent123
     Then the 404 page renders
+
+Feature: Search Index Sync
+
+  Scenario: New listing is indexed on creation
+    Given a merchant creates a new active listing "Handmade Candle"
+    When the Firestore write triggers the Cloud Function
+    Then a search document is upserted to the search index
+    And the document includes: title, description, type, basePrice, tags, images[0]
+    And the document includes denormalized: merchantName, city, lat, lng
+
+  Scenario: Listing update re-indexes
+    Given an indexed listing "Handmade Candle"
+    When the merchant updates the price from $25 to $30
+    Then the search document is updated with the new basePrice
+
+  Scenario: Archived listing is removed from index
+    Given an indexed listing "Handmade Candle"
+    When the merchant archives the listing (status → "archived")
+    Then the search document is deleted from the index
+
+  Scenario: Draft listings are not indexed
+    Given a merchant creates a listing with status "draft"
+    Then no search document is created in the index
+
+  Scenario: Deleted site removes all listings from index
+    Given a merchant with 5 indexed listings
+    When their site document is deleted
+    Then all 5 listing documents are removed from the search index
+
+  Scenario: Function handles missing site gracefully
+    Given a listing with a siteId that no longer exists
+    When the Cloud Function attempts to denormalize
+    Then the function logs a warning and skips indexing
+    And no error is thrown
 ```
 
 ## Component Specifications
@@ -169,3 +204,4 @@ Feature: Listing Detail Page
 | `ListingCard` | Visual & Behavioral | **Location:** `components/listings/ListingCard.js`<br>**Behavior:** Updated to ensure the card links correctly to `/marketplace/[listingId]`.<br>**Visual:** Uses Interactive Marketplace Card tokens: `group relative bg-white rounded-2xl border border-slate-200 p-6 shadow-sm overflow-hidden transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-[0_12px_24px_-8px_rgba(15,23,42,0.08)] hover:border-indigo-300 cursor-pointer`. Search terms are highlighted in the results if applicable. |
 | `EmptySearchState` | Visual | **Location:** `components/listings/EmptySearchState.js`<br>**Props:** `query`<br>**Visual:** Centered layout with a friendly message and suggestions. Uses `font-outfit` for the main message and `font-inter` for suggestions.<br>**Behavior:** Renders when the search results array is empty. |
 | `MarketplaceSkeleton` | Visual | **Location:** `components/listings/MarketplaceSkeleton.js`<br>**Visual:** Premium shimmer skeleton using `animate-pulse rounded-2xl bg-gradient-to-r from-indigo-50 via-indigo-100 to-indigo-50 bg-[length:200%_100%]`. |
+| `Search Index Sync Function` | Cloud Function | **Location:** `functions/index.js`<br>**Behavior:** Triggered by `onDocumentWritten` on the `listings` collection. Denormalizes listing data by fetching parent site details (`merchantName`, `city`, `lat`, `lng`) via `sitesService`. Upserts active listings to the external search index (Typesense). Removes documents from the index if the listing is deleted, archived, or if the parent site is deleted. Skips indexing for draft listings. Logs warnings and skips gracefully if parent site data is missing. |
