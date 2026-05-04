@@ -1,7 +1,7 @@
 # BLUEPRINT: Auto-Generated Merchant Storefronts
 
 ## Last Updated
-2026-05-02
+2026-05-03
 
 ## 1. Entities
 
@@ -28,6 +28,17 @@ Manages the expandable schedule view for business hours in the profile header.
 |---|---|---|---|
 | `COLLAPSED` | `TOGGLE_SCHEDULE` | `EXPANDED` | Action: Reveal full schedule with smooth expand animation. |
 | `EXPANDED` | `TOGGLE_SCHEDULE` | `COLLAPSED` | Action: Hide full schedule. |
+
+### `ThemeSelectorMachine`
+Manages the state of the theme selection UI in the merchant dashboard.
+
+| State | Event | Next State | Actions/Guards |
+|---|---|---|---|
+| `IDLE` | `SELECT_THEME` | `UNSAVED_CHANGES` | Action: Update local `selectedTheme` state, highlight selected card, update live preview. |
+| `UNSAVED_CHANGES` | `SELECT_THEME` | `UNSAVED_CHANGES` | Action: Update local `selectedTheme` state, highlight selected card, update live preview. |
+| `UNSAVED_CHANGES` | `SAVE` | `SAVING` | Action: Call DB update to persist theme selection. |
+| `SAVING` | `SAVE_SUCCESS` | `IDLE` | Action: Show success indicator. |
+| `SAVING` | `SAVE_ERROR` | `UNSAVED_CHANGES` | Action: Show error message. |
 
 ## 3. Gherkin Scenarios
 
@@ -116,6 +127,29 @@ Feature: Storefront SEO & OpenGraph
   Scenario: Canonical URL is set correctly
     Given a merchant storefront at /m/river-city-scapes
     Then the canonical URL meta tag points to https://centraltexas.com/m/river-city-scapes
+
+Feature: Storefront Theme Selection
+
+  Scenario: Merchant selects a theme
+    Given a merchant on their dashboard settings page
+    When they view the Theme Selector
+    Then they see three theme previews: "The Maker", "The Trade", "The Venue"
+    And clicking one highlights it as selected
+
+  Scenario: Theme is saved to Firestore
+    Given a merchant selects "The Venue"
+    When they click "Save"
+    Then the site document's theme field is updated to "venue"
+    And their public storefront re-renders with The Venue theme
+
+  Scenario: Default theme is applied
+    Given a new merchant who hasn't selected a theme
+    Then their storefront renders with "The Trade" as the default theme
+
+  Scenario: Theme changes are reflected immediately
+    Given a merchant previewing their storefront in the dashboard
+    When they switch from "The Trade" to "The Maker"
+    Then the preview updates in real-time without a page reload
 ```
 
 ## 4. Component Specifications
@@ -124,10 +158,11 @@ Feature: Storefront SEO & OpenGraph
 |---|---|---|---|
 | `RootLayout` (`app/layout.js`) | Server | Root layout. Defines default meta tags and OpenGraph fallback. | N/A |
 | `StorefrontPage` (`app/m/[slug]/page.js`) | Server | Dynamic route `/m/[slug]`. Fetches `Site` via `getSiteBySlug` and `Listing`s via `listListingsBySite`. Returns 404 if slug is invalid. Uses ISR (`revalidate: 60`). Generates dynamic OpenGraph metadata (`title`, `description`, `og:title`, `og:description`, `og:image`, `og:url`, canonical URL) using `generateMetadata`. Uses `logoUrl` for `og:image` with fallback. Provides fallback description if `bio` is empty. Injects JSON-LD LocalBusiness structured data. | N/A (Data fetching and SEO wrapper) |
-| `SiteRenderer` (`components/sites/SiteRenderer.js`) | Client | Manages `activeTab` state. Groups listings by `type`. Dispatches to `TheMaker`, `TheTrade`, or `TheVenue` based on `site.theme`. | Renders top section: full-width cover photo with logo overlay, business name, bio, location (city + map link), and business hours (compact badge with expandable schedule). Renders tab bar between profile header and grid. Tab bar uses horizontal scrollable pill bar on mobile, standard on desktop. Active tab: `bg-indigo-50 text-indigo-700 font-medium rounded-full`. Inactive: `text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-medium rounded-full`. Includes listing count badge. Grid: `grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6`. Shows empty state "Coming soon — check back for offerings!" if no listings. |
+| `SiteRenderer` (`components/sites/SiteRenderer.js`) | Client | Manages `activeTab` state. Groups listings by `type`. Dispatches to `TheMaker`, `TheTrade`, or `TheVenue` based on `site.theme` (defaults to `TheTrade` if undefined). Accepts a `themeOverride` prop for real-time dashboard previews. | Renders top section: full-width cover photo with logo overlay, business name, bio, location (city + map link), and business hours (compact badge with expandable schedule). Renders tab bar between profile header and grid. Tab bar uses horizontal scrollable pill bar on mobile, standard on desktop. Active tab: `bg-indigo-50 text-indigo-700 font-medium rounded-full`. Inactive: `text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-medium rounded-full`. Includes listing count badge. Grid: `grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6`. Shows empty state "Coming soon — check back for offerings!" if no listings. |
+| `ThemeSelector` (`components/editor/ThemeSelector.js`) | Client | Manages local `selectedTheme` state. Triggers real-time preview updates. Calls `updateSite` on save. | Renders 3 large clickable preview cards using Interactive Marketplace Card styles (`group relative bg-white rounded-2xl border border-slate-200 p-6 shadow-sm overflow-hidden transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-[0_12px_24px_-8px_rgba(15,23,42,0.08)] hover:border-indigo-300 cursor-pointer`). Each card shows a miniature mock of the theme. Active selection adds a check mark icon and an indigo ring border (`ring-2 ring-indigo-600`). Includes a Primary Button for saving (`bg-indigo-600 text-white rounded-lg active:scale-[0.98]`). |
 | `ListingCard` (`components/listings/ListingCard.js`) | Client | Receives `listing` prop. | Uses Interactive Marketplace Card: `group relative bg-white rounded-2xl border border-slate-200 p-6 shadow-sm overflow-hidden transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-[0_12px_24px_-8px_rgba(15,23,42,0.08)] hover:border-indigo-300 cursor-pointer`. Adapts content: prominent date/time for events, price for products, billing model for services. |
 | `TheMaker` (`components/sites/themes/TheMaker.js`) | Client | Receives `site` and `filteredListings`. | Earthy, organic vibe. Primary actions use `amber-500`. Max border radiuses (`rounded-full` buttons, `rounded-[2rem]` images). Background `#FAF9F6`. Asymmetrical CSS grids for galleries. |
 | `TheTrade` (`components/sites/themes/TheTrade.js`) | Client | Receives `site` and `filteredListings`. | Ironclad trust vibe. Heavy `indigo-600` and `slate-900`. Tight radiuses (`rounded-md` or `rounded-lg`). Highly structured list-views. |
 | `TheVenue` (`components/sites/themes/TheVenue.js`) | Client | Receives `site` and `filteredListings`. | Immersive, moody vibe. Dark mode (`bg-slate-900`, `text-white`). Full-bleed layouts (`w-full`). Glassmorphism base (`bg-black/40 backdrop-blur-lg border-white/10`). Sharp corners (`rounded-none`). |
-| `sitesService` (`lib/dbServices/sitesService.js`) | Service | N/A | Firestore queries for `Site` entity by `slug` (`getSiteBySlug`). |
+| `sitesService` (`lib/dbServices/sitesService.js`) | Service | N/A | Firestore queries for `Site` entity by `slug` (`getSiteBySlug`). Includes `updateSite` to persist changes like `theme` selection. |
 | `listingsService` (`lib/dbServices/listingsService.js`) | Service | N/A | Firestore queries for `Listing` entities by `siteId` (`listListingsBySite`). |
