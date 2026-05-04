@@ -1,7 +1,7 @@
 # BLUEPRINT: Marketplace Discovery Engine
 
 ## Last Updated
-2023-10-24
+2024-05-21
 
 ## Entities
 
@@ -9,6 +9,7 @@
 |---|---|---|
 | `SearchQuery` | Represents the active filter state and search parameters in the marketplace. | `type` (String: Events, Products, Services), `city` (String[]), `priceMin` (Number), `priceMax` (Number), `dateRange` (String), `tags` (String[]) |
 | `FacetCount` | Represents the number of available listings for a specific filter value returned by the search index. | `field` (String), `value` (String), `count` (Number) |
+| `Listing` | Represents the full data model of a marketplace listing fetched from Firestore for the detail page. | `id` (String), `type` (String: Product, Event, Service, Food, Community), `title` (String), `description` (String), `images` (String[]), `price` (Number/String), `merchant` (Object: name, logo, slug), `variants` (Array), `eventDetails` (Object: date, venue, ticketTiers) |
 
 ## State Machines
 
@@ -21,6 +22,19 @@ Manages the dynamic filter UI and URL synchronization.
   - `REMOVE_CHIP`: Removes an active filter via the chip UI. Transitions to `updating_filters`.
   - `SYNC_URL`: Pushes the new filter state to the URL search parameters. Transitions to `fetching_results`.
   - `RESULTS_LOADED`: Receives new listings and updated `FacetCount` data from the API. Transitions to `idle`.
+
+### Image Gallery State Machine
+Manages the active image viewing state on the listing detail page.
+- **States:** `idle`, `viewing_image`
+- **Events:**
+  - `SELECT_THUMBNAIL`: Updates the main display image to the selected thumbnail. Transitions to `viewing_image`.
+  - `SCROLL_GALLERY`: Updates the active index based on horizontal scroll position (mobile).
+
+### Variant Selector State Machine
+Manages the selected product variant on the listing detail page.
+- **States:** `idle`, `variant_selected`
+- **Events:**
+  - `SELECT_VARIANT`: Updates the selected variant, adjusting the displayed price and available stock. Transitions to `variant_selected`.
 
 ## Gherkin Scenarios
 
@@ -60,6 +74,46 @@ Feature: Faceted Search
     Given a consumer filters by type "Events" and city "San Marcos"
     Then the URL updates to /marketplace?type=EVENT&city=San+Marcos
     And sharing that URL shows the same filtered results
+
+Feature: Listing Detail Page
+
+  Scenario: Product detail page renders correctly
+    Given a PRODUCT listing "Handmade Candle" with 3 images and 2 variants
+    When a consumer navigates to /marketplace/{listingId}
+    Then the page shows an image gallery with 3 images
+    And the title, description, and base price
+    And a variant selector dropdown
+    And a "Buy Now" button
+    And a merchant info card with name, logo, and link to storefront
+
+  Scenario: Event detail page shows date and tickets
+    Given an EVENT listing "Farm Festival" on June 15
+    When a consumer views the detail page
+    Then the page prominently displays "Saturday, June 15, 2026 · 6:00 PM"
+    And shows the venue name and address
+    And lists ticket tiers with prices
+    And a "Get Tickets" CTA button
+
+  Scenario: Service detail page shows lead-gen CTA
+    Given a SERVICE listing "Residential Plumbing"
+    When a consumer views the detail page
+    Then the pricing shows "From $75/hr" or "Request a Quote"
+    And the CTA button says "Request Quote" or "Contact"
+
+  Scenario: Merchant card links to storefront
+    Given a listing by merchant "River City Scapes" with slug "river-city-scapes"
+    When the consumer clicks the merchant name
+    Then they navigate to /m/river-city-scapes
+
+  Scenario: OpenGraph meta tags for sharing
+    Given a listing "Farm Festival" with an image
+    When the page URL is shared on social media
+    Then the link preview shows the listing title, image, and price
+
+  Scenario: 404 for invalid listing ID
+    Given no listing exists with ID "nonexistent123"
+    When a consumer navigates to /marketplace/nonexistent123
+    Then the 404 page renders
 ```
 
 ## Component Specifications
@@ -70,3 +124,8 @@ Feature: Faceted Search
 | `FilterChips` | Visual | **Location:** `components/listings/ListingFilters.js` (or sub-component)<br>**Props:** `activeFilters`, `onRemove`<br>**Visual:** Pill-style chips rendered above the results grid. Uses `inline-flex items-center gap-2 rounded-full bg-indigo-50 px-3 py-1.5 text-sm font-medium text-indigo-700 transition-all duration-200 hover:bg-indigo-100`. Includes a small "×" icon for dismissal.<br>**Behavior:** Clicking the "×" triggers `onRemove` for that specific filter key/value. |
 | `Marketplace Page` | Integration | **Location:** `app/marketplace/page.js`<br>**Behavior:** Acts as the orchestrator for the search view. Reads initial state from URL search parameters. Passes state to `ListingFilters`. When filters change, updates the URL using Next.js `useRouter` (`router.push` or `router.replace` with `scroll: false`) to persist state. Fetches data from `/api/marketplace/search` based on active URL parameters. |
 | `Search API Route` | API | **Location:** `app/api/marketplace/search/route.js`<br>**Behavior:** Accepts GET requests with query parameters (e.g., `?type=EVENT&city=San+Marcos`). Constructs a query for the external search index (Typesense/Algolia). Applies AND logic across different filter categories. Requests facet counts for `city`, `tags`, etc. Returns a JSON payload containing `listings` (array) and `facets` (array of `FacetCount` objects). |
+| `Listing Detail Page` | Integration | **Location:** `app/marketplace/[listingId]/page.js`<br>**Behavior:** Server-side component. Fetches listing data directly from Firestore via `getListingById`. Returns 404 if listing doesn't exist. Generates OpenGraph meta tags for social sharing. Adapts layout and child components based on listing `type` (Product, Event, Service, Food, Community). Includes a breadcrumb (Marketplace > {Type} > {Listing Title}). Price display uses large, bold text (`font-outfit text-3xl font-semibold tracking-tight text-slate-900 leading-snug`). |
+| `Merchant Info Card` | Visual | **Location:** `components/listings/MerchantCard.js` (or inline)<br>**Props:** `merchant` (name, logo, slug)<br>**Visual:** Uses Standard Card styling: `bg-white rounded-2xl border border-slate-200/80 shadow-[0_2px_8px_-2px_rgba(15,23,42,0.04)] overflow-hidden p-6`. Displays merchant logo, name (`font-inter text-base font-semibold text-slate-800`), and a "Visit Storefront →" link.<br>**Behavior:** Clicking the card or link navigates to `/m/[slug]`. |
+| `Listing Image Gallery` | Visual & Behavioral | **Location:** `components/listings/ImageGallery.js`<br>**Props:** `images` (Array of URLs)<br>**Visual:** Horizontal scroll with snap points on mobile. Main hero image with a grid of thumbnails below on desktop. Images use `rounded-2xl` to match the design system's standard card radius.<br>**Behavior:** Clicking a thumbnail updates the main hero image. |
+| `Listing CTA Button` | Visual | **Location:** `components/listings/ListingCTA.js`<br>**Props:** `type`, `label`, `onClick`<br>**Visual:** Uses Primary Button tokens: `inline-flex items-center justify-center rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition-all duration-200 ease-out hover:bg-indigo-700 hover:-translate-y-[1px] hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 active:scale-[0.98]`. Full-width (`w-full`) on mobile, inline on desktop.<br>**Behavior:** Triggers purchase, ticket modal, or contact form based on listing type. |
+| `ListingCard` | Visual & Behavioral | **Location:** `components/listings/ListingCard.js`<br>**Behavior:** Updated to ensure the card links correctly to `/marketplace/[listingId]`.<br>**Visual:** Uses Interactive Marketplace Card tokens: `group relative bg-white rounded-2xl border border-slate-200 p-6 shadow-sm overflow-hidden transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-[0_12px_24px_-8px_rgba(15,23,42,0.08)] hover:border-indigo-300 cursor-pointer`. |
