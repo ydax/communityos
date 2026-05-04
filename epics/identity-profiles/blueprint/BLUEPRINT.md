@@ -5,13 +5,14 @@
 | Entity | Fields | Description |
 |---|---|---|
 | `User` | `uid` (string), `email` (string), `displayName` (string), `role` (string, default: "consumer"), `preferredCity` (string, nullable), `createdAt` (timestamp) | Core user identity document stored in Firestore. Represents the lightweight consumer profile. |
-| `Site` | `bio` (string), `hours` (json), `location.lat` (number, nullable), `location.lng` (number, nullable), `location.city` (string), `location.formattedAddress` (string), `logoUrl` (string) | Merchant profile document stored in the sites collection. Contains business details and geocoded location data. |
+| `Site` | `name` (string), `slug` (string), `category` (string), `brandColor` (string), `bio` (string), `hours` (json), `location.lat` (number, nullable), `location.lng` (number, nullable), `location.city` (string), `location.formattedAddress` (string), `logoUrl` (string) | Merchant profile document stored in the sites collection. Contains business details, branding, and geocoded location data. |
 
 ## 2. State Machines
 
 | Component | States | Transitions | Description |
 |---|---|---|---|
 | `CitySelector` | `idle`, `selecting`, `saving`, `error` | `idle` -> `selecting` (click dropdown) <br> `selecting` -> `saving` (choose city) <br> `saving` -> `idle` (success) <br> `saving` -> `error` (failure) | Manages the state of the preferred city dropdown in the marketplace header. |
+| `MerchantProfileWizard` | `step_name`, `step_bio`, `step_hours`, `step_address`, `step_logo`, `submitting`, `success`, `error` | `step_name` -> `step_bio` (next) <br> `step_bio` -> `step_hours` (next) <br> `step_hours` -> `step_address` (next) <br> `step_address` -> `step_logo` (next) <br> `step_logo` -> `submitting` (submit) <br> `submitting` -> `success` (saved) <br> `submitting` -> `error` (failure) | Manages the multi-step onboarding flow for merchants to create their profile. |
 
 ## 3. Gherkin Scenarios
 
@@ -68,11 +69,58 @@ Feature: Server-Side Address Geocoding
     And overwrites location.lat and location.lng with new values
 ```
 
+### Feature: Merchant Profile Form
+
+```gherkin
+Feature: Merchant Profile Form
+
+  Scenario: Merchant completes the profile wizard
+    Given a logged-in consumer on the "Get Started" page
+    When they enter a business name "River City Scapes"
+    And select category "Services"
+    And write a bio
+    And set business hours for Monday through Friday
+    And enter their street address
+    And upload a logo image
+    And click "Launch My Storefront"
+    Then a site document is created in Firestore
+    And the site has a generated slug "river-city-scapes"
+    And the user's role is updated to "merchant"
+    And they are redirected to their /admin dashboard
+
+  Scenario: Slug collision is handled
+    Given a site with slug "joes-bbq" already exists
+    When a new merchant enters business name "Joe's BBQ"
+    Then the system generates slug "joes-bbq-2"
+    And the slug is unique across all sites
+
+  Scenario: Logo upload succeeds
+    Given a merchant on the logo upload step
+    When they upload a 10MB iPhone photo
+    Then the image is compressed and resized
+    And stored in Firebase Storage under logos/{siteId}
+    And the logoUrl is saved to the site document
+
+  Scenario: Required fields are enforced
+    Given a merchant on the profile wizard
+    When they attempt to submit without a business name
+    Then an inline validation error appears on the business name field
+    And the form does not submit
+
+  Scenario: Business hours are stored as structured JSON
+    Given a merchant sets hours: Monday 9AM-5PM, Tuesday 9AM-5PM
+    When the form is submitted
+    Then the site document hours field contains structured JSON
+    And closed days have null values
+```
+
 ## 4. Component Specifications
 
 | Component | File Path | Visual/Styling Rules (Tailwind) | Behavioral/Data Rules |
 |---|---|---|---|
 | `MarketplaceHeader` | `components/layout/MarketplaceHeader.js` | `sticky top-0 z-50 flex h-16 w-full items-center justify-between border-b border-white/20 bg-white/70 px-4 backdrop-blur-xl transition-all sm:px-6 lg:px-8` | Renders the top navigation for the marketplace. Houses the `CitySelector` component. |
 | `CitySelector` | `components/discovery/CitySelector.js` | Dropdown trigger uses Secondary Button styles: `inline-flex items-center justify-center rounded-lg bg-white px-5 py-2.5 text-sm font-medium text-slate-700 border border-slate-200 shadow-sm transition-all duration-200 ease-out hover:bg-slate-50 hover:border-slate-300 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 active:scale-[0.98]`. Font: `font-inter`. | Fetches current `preferredCity` from user doc. On change, updates `usersService.js` and triggers marketplace re-filter. MVP Cities: Austin, San Marcos, Kyle, Buda, New Braunfels, San Antonio. |
+| `MerchantProfileWizard` | `app/get-started/page.js` | Multi-step wizard with pill progress indicators. Each step uses Standard Card: `bg-white rounded-2xl border border-slate-200/80 shadow-[0_2px_8px_-2px_rgba(15,23,42,0.04)] overflow-hidden p-6`. Category selection uses large pill buttons (`rounded-full` secondary button styles). Brand color picker offers 8 curated presets. Primary CTA uses: `inline-flex items-center justify-center rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition-all duration-200 ease-out hover:bg-indigo-700 hover:-translate-y-[1px] hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 active:scale-[0.98]`. | Manages multi-step state. Validates required fields (e.g., business name). On submit, calls `sitesService.js` to create site, generates unique slug with collision detection, updates user role to `merchant` via `usersService.js`, and redirects to `/admin`. |
+| `MediaDropzone` | `components/listings/MediaDropzone.js` | Drag-and-drop area with preview. Uses standard focus rings (`focus-visible:ring-2 focus-visible:ring-indigo-500`) and hover states. | Compresses and resizes image. Uploads to Firebase Storage under `logos/{siteId}` using `lib/utils/uploadImage.js`. Returns `logoUrl` to the parent wizard form. |
 
-*Last Updated: 2024-05-26*
+*Last Updated: 2023-10-24*
