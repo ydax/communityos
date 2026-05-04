@@ -1,6 +1,6 @@
 # BLUEPRINT.md
 
-**Last Updated:** 2026-05-04
+**Last Updated:** 2026-05-05
 
 ## Epic Context: Payments Gateway (Stripe Connect)
 Enable commerce without holding the bag. CentralTexas.com is a marketplace, not a merchant. The platform facilitates transactions between consumers and merchants using Stripe Connect Express. For MVP, checkout is single-item, single-merchant only.
@@ -11,6 +11,7 @@ Enable commerce without holding the bag. CentralTexas.com is a marketplace, not 
 |---|---|---|
 | `Order` | Represents a consumer's purchase of a listing/variant. | `id`, `listingId`, `variantId`, `consumerId`, `buyerEmail`, `merchantId`, `stripeSessionId`, `stripePaymentIntentId`, `amount`, `platformFee`, `status` (pending, completed, failed, refunded), `createdAt` |
 | `Site` | Represents a merchant's tenant configuration and platform settings. | `id`, `merchantId`, `stripeConnectAccountId` (optional), `platformFeePercent` (optional) |
+| `Variant` | Represents a specific purchasable option of a listing. | `id`, `listingId`, `name`, `priceDelta`, `inventoryCount` |
 
 ## 2. State Machines
 
@@ -130,6 +131,43 @@ Enable commerce without holding the bag. CentralTexas.com is a marketplace, not 
     And only then marks the merchant as payment-ready
 ```
 
+### Feature: Stripe Webhook Handler
+
+```gherkin
+  Scenario: Webhook creates order on payment success
+    Given a valid checkout.session.completed event
+    When the webhook endpoint receives it
+    Then it verifies the Stripe signature
+    And creates an order document in Firestore
+    And decrements variant inventoryCount by the purchased quantity
+    And returns HTTP 200
+
+  Scenario: Webhook rejects invalid signature
+    Given a webhook request with an invalid signature
+    When the endpoint attempts verification
+    Then it returns HTTP 400
+    And no order document is created
+
+  Scenario: Webhook handles duplicate events idempotently
+    Given a checkout.session.completed event for session "cs_123"
+    And an order already exists with stripeSessionId "cs_123"
+    When the webhook receives the same event again
+    Then it skips order creation
+    And returns HTTP 200 (not an error)
+
+  Scenario: Webhook handles expired sessions
+    Given a checkout.session.expired event
+    When the webhook processes it
+    Then no order is created
+    And any pending inventory hold is released
+
+  Scenario: Inventory decrements on purchase
+    Given a variant with inventoryCount 50
+    When a checkout.session.completed event fires for quantity 2
+    Then the variant inventoryCount is decremented to 48
+    And a Firestore transaction ensures atomicity
+```
+
 ## 4. Component Specifications
 
 | Component / Service | Type | Description / Behavior | Visual / Design System Tokens |
@@ -138,7 +176,9 @@ Enable commerce without holding the bag. CentralTexas.com is a marketplace, not 
 | `CheckoutConfirmationPage` | UI Page | **Path:** `/marketplace/checkout`<br>**Props:** `searchParams.session_id`.<br>**Behavior:** Fetches order details using `session_id`. Displays success message, order summary (title, quantity, amount), and "Browse More" link. | **Container:** `max-w-7xl mx-auto px-4 sm:px-6 lg:px-8`.<br>**Card:** Standard Card (`bg-white rounded-2xl border border-slate-200/80 shadow-[0_2px_8px_-2px_rgba(15,23,42,0.04)] overflow-hidden p-6`).<br>**Header:** `font-outfit text-3xl font-semibold tracking-tight text-slate-900 leading-snug`.<br>**Text:** `font-inter text-base font-normal text-slate-600`. |
 | `app/api/checkout/create-intent/route.js` | API Route | **Method:** POST.<br>**Payload:** `listingId`, `variantId`, `quantity`.<br>**Behavior:** Validates merchant Stripe Connect status. Calculates total price and 6% platform fee. Creates Stripe Checkout Session with `payment_intent_data.transfer_data.destination` and `application_fee_amount`. Returns `{ url: session.url }`. Returns 400 if merchant unconnected. | N/A |
 | `app/admin/orders/page.js` | UI Page | **Path:** `/admin/orders`<br>**Behavior:** Fetches orders for the logged-in merchant via `ordersService`. Displays a table (desktop) or cards (mobile) of orders sorted by date. Columns: Date (relative), Buyer Email, Listing Title (links to edit page), Amount, Status. Displays empty state if 0 orders. | **Container:** `max-w-5xl mx-auto`.<br>**Card/Table Wrapper:** `bg-white rounded-2xl border border-slate-200/80 shadow-[0_2px_8px_-2px_rgba(15,23,42,0.04)] overflow-hidden`.<br>**Header:** `font-outfit text-3xl font-semibold tracking-tight text-slate-900 leading-snug`.<br>**Table Headers:** `font-inter text-xs font-semibold tracking-wider text-slate-500 uppercase`.<br>**Badges:** Completed (`bg-emerald-100 text-emerald-700`), Pending (`bg-amber-100 text-amber-700`), Refunded (`bg-rose-100 text-rose-700`) with `font-inter text-sm font-medium rounded-full px-2.5 py-0.5`.<br>**Empty State Text:** `font-inter text-base font-normal text-slate-600`. |
-| `lib/dbServices/ordersService.js` | Service | **Behavior:** Provides functions to create an order document in Firestore (called by webhook handler) and fetch orders by `merchantId` (called by `/admin/orders` page). | N/A |
+| `lib/dbServices/ordersService.js` | Service | **Behavior:** Provides functions to create an order document in Firestore (called by webhook handler) and fetch orders by `merchantId` (called by `/admin/orders` page). Handles idempotency by checking if an order with the given `stripeSessionId` already exists before creation. | N/A |
 | `app/admin/settings/payments/page.js` | UI Page | **Path:** `/admin/settings/payments`<br>**Behavior:** Fetches merchant's site document. Displays Stripe Connect status. If unconnected, shows "Connect Bank Account" button. If incomplete, shows "Resume Setup". If connected, shows "Payments Connected ✓" with masked bank info. | **Card:** Standard Card (`bg-white rounded-2xl border border-slate-200/80 shadow-[0_2px_8px_-2px_rgba(15,23,42,0.04)] overflow-hidden p-6`).<br>**Primary Button:** `inline-flex items-center justify-center rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition-all duration-200 ease-out hover:bg-indigo-700 hover:-translate-y-[1px] hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 active:scale-[0.98]`).<br>**Success Badge:** `bg-emerald-100 text-emerald-700 font-inter text-sm font-medium rounded-full px-2.5 py-0.5`.<br>**Warning Badge:** `bg-amber-100 text-amber-700 font-inter text-sm font-medium rounded-full px-2.5 py-0.5`. |
 | `app/api/stripe/connect/route.js` | API Route | **Method:** GET/POST.<br>**Behavior:** Creates Stripe Account Link for onboarding. Handles return URL by calling `stripe.accounts.retrieve(accountId)` to verify `charges_enabled` is true before marking merchant as payment-ready in the database. | N/A |
 | `lib/dbServices/sitesService.js` | Service | **Behavior:** Provides functions to fetch and update the site document, specifically adding or updating the `stripeConnectAccountId` field. | N/A |
+| `app/api/stripe/webhooks/route.js` | API Route | **Method:** POST.<br>**Behavior:** Receives signed events from Stripe. Uses raw body parsing and `STRIPE_WEBHOOK_SECRET` to verify signature via `stripe.webhooks.constructEvent()`. On `checkout.session.completed`, creates order via `ordersService` (idempotent) and decrements variant `inventoryCount` via `inventoryService`. On `checkout.session.expired`, releases pending inventory holds. Returns 200 on success/duplicate, 400 on invalid signature. | N/A |
+| `lib/dbServices/inventoryService.js` | Service | **Behavior:** Provides functions to manage variant inventory. Includes atomic decrement of `inventoryCount` using Firestore transactions upon purchase, and releasing pending inventory holds for expired sessions. | N/A |
