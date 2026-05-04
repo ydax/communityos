@@ -1,6 +1,6 @@
 # BLUEPRINT: Universal Listing Engine
 
-**Last Updated:** 2023-10-25
+**Last Updated:** 2024-05-24
 
 ## 1. Epic Context
 The Universal Listing Engine provides a single unified form and polymorphic document model for merchants to create and manage listings of any type (Product, Event, Service, Food, Community). All listings share a common base schema for marketplace search, with type-specific extension fields stored in a polymorphic `details` JSON payload.
@@ -9,12 +9,17 @@ The Universal Listing Engine provides a single unified form and polymorphic docu
 
 | Entity | Type | Description | Fields |
 |---|---|---|---|
-| `Listing` | Document | Base polymorphic listing schema | `id`, `type` (Enum), `title`, `description`, `basePrice` (Int, cents), `images` (Array), `tags` (Array), `location`, `details` (JSON), `variants` (Array) |
+| `Listing` | Document | Base polymorphic listing schema | `id`, `type` (Enum), `status` (Enum: active, draft, archived), `title`, `description`, `basePrice` (Int, cents), `images` (Array), `tags` (Array), `location`, `details` (JSON), `variants` (Array) |
 | `EventDetails` | JSON Object | Event-specific details payload stored within `Listing.details` | `startTime` (DateTime), `endTime` (DateTime), `venue` (String), `isTicketed` (Boolean) |
 | `Variant` | Object | Flat array item for ticket tiers, sizes, etc. | `name` (String), `priceDelta` (Int, cents), `inventoryCount` (Int) |
 
 ## 3. State Machines
 *(No complex UI state machines defined yet. Component-level derived state handles Event past/upcoming status.)*
+
+**Listing Status Lifecycle:**
+- **Draft:** Initial state when a merchant is creating or editing an unpublished listing.
+- **Active:** Listing is published and visible on the marketplace.
+- **Archived:** Listing is hidden from the marketplace and active dashboard views (triggered via dashboard quick action).
 
 ## 4. Gherkin Scenarios
 
@@ -53,8 +58,51 @@ Feature: Event Listing Type
     And the "Buy Tickets" button is disabled
 ```
 
+### Feature: Merchant Listing Dashboard
+
+```gherkin
+Feature: Merchant Listing Dashboard
+
+  Scenario: Dashboard shows all merchant listings
+    Given a merchant with 5 active listings of mixed types
+    When they navigate to /admin/listings
+    Then all 5 listings appear in a grid
+    And each card shows the listing type badge, title, price, and status
+
+  Scenario: Filter by listing type
+    Given a merchant with products, events, and services
+    When they click the "Events" filter pill
+    Then only event listings are shown
+    And the pill is highlighted as active
+
+  Scenario: Filter by status
+    Given a merchant with active and draft listings
+    When they select "Drafts" from the status filter
+    Then only draft listings are shown
+
+  Scenario: Quick action to edit
+    Given a listing card on the dashboard
+    When the merchant clicks "Edit"
+    Then they are navigated to /admin/listings/{listingId}/edit
+
+  Scenario: Quick action to archive
+    Given an active listing on the dashboard
+    When the merchant clicks the archive icon
+    Then a confirmation prompt appears
+    And confirming sets the listing status to "archived"
+    And the listing disappears from the active view
+
+  Scenario: Empty state for new merchants
+    Given a merchant with no listings
+    When they visit /admin/listings
+    Then a friendly empty state shows: "No listings yet"
+    And a prominent "Create Your First Listing" button is displayed
+```
+
 ## 5. Component Specifications
 
 | Component | Track | Description | Design System & Tailwind Classes |
 |---|---|---|---|
-| `ListingCard` | Visual & Behavioral | Renders a polymorphic listing. For `EVENT` types, displays date badge, time, venue, and ticket pricing/RSVP logic. | **Base Card:** `group relative bg-white rounded-2xl border border-slate-200 p-6 shadow-sm overflow-hidden transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-[0_12px_24px_-8px_rgba(15,23,42,0.08)] hover:border-indigo-300 cursor-pointer`<br><br>**Event Date Badge:** `bg-amber-100 text-amber-700 font-inter text-sm font-bold uppercase tracking-widest rounded-lg px-3 py-2`<br><br>**Title:** `font-outfit text-2xl font-semibold text-slate-900 leading-snug`<br><br>**Time/Venue:** `font-inter text-sm font-medium text-slate-600`<br><br>**CTA Button (Active):** `inline-flex items-center justify-center rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition-all duration-200 ease-out hover:bg-indigo-700 hover:-translate-y-[1px] hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 active:scale-[0.98]`<br><br>**Past Event State:** Apply `opacity-50` to card. Button uses disabled state: `disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400`. |
+| `ListingCard` | Visual & Behavioral | Renders a polymorphic listing. For `EVENT` types, displays date badge, time, venue, and ticket pricing/RSVP logic. Updated to include type badge and status indicator for dashboard view. | **Base Card:** `group relative bg-white rounded-2xl border border-slate-200 p-6 shadow-sm overflow-hidden transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-[0_12px_24px_-8px_rgba(15,23,42,0.08)] hover:border-indigo-300 cursor-pointer`<br><br>**Type Badge (Top-Left):** `absolute top-4 left-4 bg-indigo-50 text-indigo-700 font-inter text-xs font-bold uppercase tracking-widest rounded-lg px-2 py-1`<br><br>**Status Indicator:** `h-2.5 w-2.5 rounded-full` (Active: `bg-emerald-500`, Draft: `bg-slate-400`, Archived: `bg-rose-500`)<br><br>**Event Date Badge:** `bg-amber-100 text-amber-700 font-inter text-sm font-bold uppercase tracking-widest rounded-lg px-3 py-2`<br><br>**Title:** `font-outfit text-2xl font-semibold text-slate-900 leading-snug`<br><br>**Time/Venue:** `font-inter text-sm font-medium text-slate-600`<br><br>**CTA Button (Active):** `inline-flex items-center justify-center rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition-all duration-200 ease-out hover:bg-indigo-700 hover:-translate-y-[1px] hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 active:scale-[0.98]`<br><br>**Past Event State:** Apply `opacity-50` to card. Button uses disabled state: `disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400`. |
+| `ListingGrid` | Visual & Behavioral | Renders a responsive grid of `ListingCard` components. Handles the empty state when a merchant has no listings. | **Grid Container:** `grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full`<br><br>**Empty State Container:** `flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-12 text-center`<br><br>**Empty State Text:** `font-inter text-lg font-medium text-slate-600 mb-4` |
+| `ListingFilters` | Visual & Behavioral | Provides horizontal scrollable pills for filtering by listing type and a dropdown for filtering by status. Includes a mobile FAB for creating listings. | **Container:** `flex w-full items-center justify-between gap-4 mb-8`<br><br>**Pill List (Scrollable):** `flex items-center gap-2 overflow-x-auto pb-2 hide-scrollbar`<br><br>**Filter Pill (Active):** `whitespace-nowrap rounded-full bg-indigo-600 px-4 py-2 font-inter text-sm font-medium text-white shadow-sm transition-all duration-200 ease-out active:scale-[0.98]`<br><br>**Filter Pill (Inactive):** `whitespace-nowrap rounded-full bg-white border border-slate-200 px-4 py-2 font-inter text-sm font-medium text-slate-600 transition-all duration-200 ease-out hover:bg-slate-50 hover:text-slate-900 active:scale-[0.98]`<br><br>**Status Dropdown:** `rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-500/20`<br><br>**Mobile FAB:** `fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-indigo-600 text-white shadow-lg transition-all duration-200 hover:bg-indigo-700 hover:-translate-y-1 hover:shadow-xl active:scale-[0.98] md:hidden` |
