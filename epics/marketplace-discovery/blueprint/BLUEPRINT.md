@@ -1,7 +1,7 @@
 # BLUEPRINT: Marketplace Discovery Engine
 
 ## Last Updated
-2024-05-24
+2024-05-25
 
 ## Entities
 
@@ -184,6 +184,37 @@ Feature: Search Index Sync
     When the Cloud Function attempts to denormalize
     Then the function logs a warning and skips indexing
     And no error is thrown
+
+Feature: SEO Category Landing Pages
+
+  Scenario: Events landing page renders for a city
+    Given 15 active event listings in San Marcos
+    When Googlebot requests /events/san-marcos
+    Then the full HTML response contains all 15 event cards
+    And the <title> is "Events in San Marcos | CentralTexas.com"
+    And the meta description is "Discover upcoming events, live music, workshops, and more in San Marcos, TX"
+    And the page includes JSON-LD structured data (ItemList schema)
+
+  Scenario: Services landing page
+    Given active service listings in Austin
+    When a user visits /services/austin
+    Then the page shows service listings filtered to Austin
+    And the <title> is "Local Services in Austin | CentralTexas.com"
+
+  Scenario: Unknown city returns generic page
+    Given no city "atlantis" exists in the system
+    When a user visits /events/atlantis
+    Then the page shows a helpful message: "No events found in Atlantis"
+    And suggests browsing all events or selecting a nearby city
+
+  Scenario: Landing pages link to the full marketplace
+    Given a consumer on /events/san-marcos
+    Then a "See all events" link navigates to /marketplace?type=EVENT
+
+  Scenario: Pages are statically generated with ISR
+    Given the page uses generateStaticParams for known cities
+    Then the page is statically generated at build time
+    And revalidates every 3600 seconds (1 hour)
 ```
 
 ## Component Specifications
@@ -191,17 +222,19 @@ Feature: Search Index Sync
 | Component | Type | Specification |
 |---|---|---|
 | `Marketplace Page` | Integration | **Location:** `app/marketplace/page.js`<br>**Behavior:** Acts as the orchestrator for the search view. Reads initial state from URL search parameters. Passes state to `ListingFilters`, `HeroSearchBar`, and `CategoryPills`. When filters change, updates the URL using Next.js `useRouter` (`router.push` or `router.replace` with `scroll: false`) to persist state. Fetches data from `/api/marketplace/search` based on active URL parameters.<br>**Visual:** Renders a hero section with a full-width gradient background, a "Happening This Weekend" carousel, and a results grid (1-col mobile, 2-col tablet, 3-col desktop). Displays `MarketplaceSkeleton` while loading and `EmptySearchState` if no results. |
+| `Category Landing Page` | Integration | **Location:** `app/events/[city]/page.js`, `app/services/[city]/page.js`, `app/products/[city]/page.js`<br>**Behavior:** Server-rendered Next.js page using ISR (`generateStaticParams` for MVP cities: Austin, San Marcos, Kyle, Buda, New Braunfels, San Antonio with 3600s revalidation). Fetches pre-filtered listings from the search index for the specific category and city. Includes JSON-LD structured data (ItemList schema) and dynamic `<title>` / meta descriptions. Returns a generic helpful message for unknown cities.<br>**Visual:** Simple, content-focused layout within `max-w-7xl mx-auto px-4 sm:px-6 lg:px-8`. H1 uses `font-outfit text-4xl md:text-5xl font-bold tracking-tight text-slate-900 leading-tight`. Renders `ListingCard` components in a clean grid. Includes a "See all [category]" link to `/marketplace?type=[TYPE]` and a `BrowseByCity` section. |
 | `HeroSearchBar` | Visual & Behavioral | **Location:** `components/listings/HeroSearchBar.js`<br>**Props:** `initialQuery`, `onSearch`<br>**Visual:** Large centered search input using glassmorphic style: `bg-white/70 backdrop-blur-xl border border-white/40 shadow-sm supports-[backdrop-filter]:bg-white/60`.<br>**Behavior:** Captures text input and triggers `onSearch` when the user presses Enter. |
 | `CategoryPills` | Visual & Behavioral | **Location:** `components/listings/CategoryPills.js`<br>**Props:** `categories`, `activeCategory`, `onSelect`<br>**Visual:** Horizontal scroll on mobile, centered row on desktop. Active pill is highlighted (e.g., using `bg-indigo-600 text-white`), inactive pills use standard secondary/ghost button styling.<br>**Behavior:** Clicking a pill triggers `onSelect` to filter by category. |
 | `ListingCarousel` | Visual | **Location:** `components/listings/ListingCarousel.js`<br>**Props:** `listings`<br>**Visual:** Horizontal scroll card carousel with snap points.<br>**Behavior:** Allows users to swipe through featured listings (e.g., "Happening This Weekend"). |
 | `ListingFilters` | Visual & Behavioral | **Location:** `components/listings/ListingFilters.js`<br>**Props:** `activeCategory`, `activeFilters`, `facetCounts`, `onChange`<br>**Visual:** Rendered as a collapsible sidebar on desktop (`w-64`) and a bottom sheet on mobile. Container uses `bg-white rounded-2xl border border-slate-200 p-6 shadow-sm`. Headers use `font-inter text-base font-semibold text-slate-800 mb-1.5`. Checkboxes for cities, dual-handle slider for price, and date picker/pre-built options for events. Micro-animations on interaction (`transition-all duration-200 ease-out`).<br>**Behavior:** Dynamically renders filter sections based on `activeCategory`. Emits `onChange` events immediately upon user interaction (no submit button). |
 | `FilterChips` | Visual | **Location:** `components/listings/ListingFilters.js` (or sub-component)<br>**Props:** `activeFilters`, `onRemove`<br>**Visual:** Pill-style chips rendered above the results grid. Uses `inline-flex items-center gap-2 rounded-full bg-indigo-50 px-3 py-1.5 text-sm font-medium text-indigo-700 transition-all duration-200 hover:bg-indigo-100`. Includes a small "×" icon for dismissal.<br>**Behavior:** Clicking the "×" triggers `onRemove` for that specific filter key/value. |
-| `Search API Route` | API | **Location:** `app/api/marketplace/search/route.js`<br>**Behavior:** Accepts GET requests with query parameters (e.g., `?q=yoga&type=EVENT&city=San+Marcos`). Constructs a query for the external search index (Typesense/Algolia). Applies full-text search on the `q` parameter, AND logic across different filter categories, and geo-bounding (e.g., within 25 miles of `preferredCity`). Requests facet counts for `city`, `tags`, etc. Returns a JSON payload containing `listings` (array with highlighted search terms) and `facets` (array of `FacetCount` objects). |
+| `Search API Route` | API | **Location:** `app/api/marketplace/search/route.js`<br>**Behavior:** Accepts GET requests with query parameters (e.g., `?q=yoga&type=EVENT&city=San+Marcos`). Constructs a query for the external search index (Typesense/Algolia). Applies full-text search on the `q` parameter, AND logic across different filter categories, and geo-bounding (e.g., within 25 miles of `preferredCity`). Requests facet counts for `city`, `tags`, etc. Returns a JSON payload containing `listings` (array with highlighted search terms) and `facets` (array of `FacetCount` objects). *Note: Also utilized by server-side category landing pages to pre-fetch index data during static generation.* |
 | `Listing Detail Page` | Integration | **Location:** `app/marketplace/[listingId]/page.js`<br>**Behavior:** Server-side component. Fetches listing data directly from Firestore via `getListingById`. Returns 404 if listing doesn't exist. Generates OpenGraph meta tags for social sharing. Adapts layout and child components based on listing `type` (Product, Event, Service, Food, Community). Includes a breadcrumb (Marketplace > {Type} > {Listing Title}). Price display uses large, bold text (`font-outfit text-3xl font-semibold tracking-tight text-slate-900 leading-snug`). |
 | `Merchant Info Card` | Visual | **Location:** `components/listings/MerchantCard.js` (or inline)<br>**Props:** `merchant` (name, logo, slug)<br>**Visual:** Uses Standard Card styling: `bg-white rounded-2xl border border-slate-200/80 shadow-[0_2px_8px_-2px_rgba(15,23,42,0.04)] overflow-hidden p-6`. Displays merchant logo, name (`font-inter text-base font-semibold text-slate-800`), and a "Visit Storefront →" link.<br>**Behavior:** Clicking the card or link navigates to `/m/[slug]`. |
 | `Listing Image Gallery` | Visual & Behavioral | **Location:** `components/listings/ImageGallery.js`<br>**Props:** `images` (Array of URLs)<br>**Visual:** Horizontal scroll with snap points on mobile. Main hero image with a grid of thumbnails below on desktop. Images use `rounded-2xl` to match the design system's standard card radius.<br>**Behavior:** Clicking a thumbnail updates the main hero image. |
 | `Listing CTA Button` | Visual | **Location:** `components/listings/ListingCTA.js`<br>**Props:** `type`, `label`, `onClick`<br>**Visual:** Uses Primary Button tokens: `inline-flex items-center justify-center rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition-all duration-200 ease-out hover:bg-indigo-700 hover:-translate-y-[1px] hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 active:scale-[0.98]`. Full-width (`w-full`) on mobile, inline on desktop.<br>**Behavior:** Triggers purchase, ticket modal, or contact form based on listing type. |
 | `ListingCard` | Visual & Behavioral | **Location:** `components/listings/ListingCard.js`<br>**Behavior:** Updated to ensure the card links correctly to `/marketplace/[listingId]`.<br>**Visual:** Uses Interactive Marketplace Card tokens: `group relative bg-white rounded-2xl border border-slate-200 p-6 shadow-sm overflow-hidden transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-[0_12px_24px_-8px_rgba(15,23,42,0.08)] hover:border-indigo-300 cursor-pointer`. Search terms are highlighted in the results if applicable. |
+| `BrowseByCity` | Visual | **Location:** `components/listings/BrowseByCity.js`<br>**Props:** `currentCity`, `category`<br>**Behavior:** Renders links to other MVP cities for cross-linking and SEO.<br>**Visual:** Simple list or grid of links using `font-inter text-base font-medium text-indigo-600 hover:text-indigo-700 transition-colors`. |
 | `EmptySearchState` | Visual | **Location:** `components/listings/EmptySearchState.js`<br>**Props:** `query`<br>**Visual:** Centered layout with a friendly message and suggestions. Uses `font-outfit` for the main message and `font-inter` for suggestions.<br>**Behavior:** Renders when the search results array is empty. |
 | `MarketplaceSkeleton` | Visual | **Location:** `components/listings/MarketplaceSkeleton.js`<br>**Visual:** Premium shimmer skeleton using `animate-pulse rounded-2xl bg-gradient-to-r from-indigo-50 via-indigo-100 to-indigo-50 bg-[length:200%_100%]`. |
 | `Search Index Sync Function` | Cloud Function | **Location:** `functions/index.js`<br>**Behavior:** Triggered by `onDocumentWritten` on the `listings` collection. Denormalizes listing data by fetching parent site details (`merchantName`, `city`, `lat`, `lng`) via `sitesService`. Upserts active listings to the external search index (Typesense). Removes documents from the index if the listing is deleted, archived, or if the parent site is deleted. Skips indexing for draft listings. Logs warnings and skips gracefully if parent site data is missing. |
